@@ -281,6 +281,32 @@
     overflow-y:auto;
     padding:28px 34px;
   }
+  .diff-panel.sidebyside{
+    display:grid;
+    grid-template-columns:1fr 1fr;
+    gap:0;
+    padding:0;
+  }
+  @media (max-width:760px){
+    .diff-panel.sidebyside{grid-template-columns:1fr;}
+    .sbs-col + .sbs-col{border-left:none;border-top:1px solid var(--rule);}
+  }
+  .sbs-col{padding:26px 26px;}
+  .sbs-col + .sbs-col{border-left:1px solid var(--rule);}
+  .sbs-col .col-head{
+    font-family:'Courier Prime',monospace;
+    font-size:11px;
+    letter-spacing:1.5px;
+    text-transform:uppercase;
+    color:var(--ink-soft);
+    margin-bottom:14px;
+    padding-bottom:8px;
+    border-bottom:1px solid var(--rule);
+  }
+  .sbs-col.left .col-head{color:var(--pink);}
+  .sbs-col.right .col-head{color:var(--blue);}
+  .para.spacer{visibility:hidden;margin:0 0 16px;min-height:1em;}
+  .block.spacer{visibility:hidden;}
 
   .para{margin:0 0 16px;}
   ins, .ins{
@@ -299,9 +325,11 @@
   }
 
   .change-block{margin:0 0 22px;}
-  .block{padding:8px 14px;border-radius:0 4px 4px 0;margin:0 0 4px;}
+  .block{padding:8px 14px;border-radius:0 4px 4px 0;margin:0 0 16px;}
   .block-old{background:var(--pink-tint);border-left:3px solid var(--pink);}
-  .block-new{background:var(--blue-tint);border-left:3px solid var(--blue);margin-bottom:0;}
+  .block-new{background:var(--blue-tint);border-left:3px solid var(--blue);}
+  .change-block .block-old{margin-bottom:4px;}
+  .change-block .block-new{margin-bottom:0;}
   .block-old.whole{text-decoration:line-through;color:var(--pink);}
   .block-new.whole{color:var(--blue);}
   .block-label{
@@ -400,6 +428,13 @@
 
   <div id="results">
     <div class="toolbar">
+      <div class="toggle-group">
+        <span class="glabel">View</span>
+        <div class="toggle" id="viewToggle">
+          <button data-val="stacked" class="active">Stacked</button>
+          <button data-val="sidebyside">Side-by-side</button>
+        </div>
+      </div>
       <div class="toggle-group">
         <span class="glabel">Granularity</span>
         <div class="toggle" id="granToggle">
@@ -591,6 +626,16 @@ setupSlot('a','fileA','slotA','placeholderA','hintA','clearA');
 setupSlot('b','fileB','slotB','placeholderB','hintB','clearB');
 
 let currentGran = 'word';
+let currentView = 'stacked';
+
+el('viewToggle').addEventListener('click', (e) => {
+  const btn = e.target.closest('button');
+  if (!btn) return;
+  [...el('viewToggle').children].forEach(b => b.classList.remove('active'));
+  btn.classList.add('active');
+  currentView = btn.dataset.val;
+  renderDiff();
+});
 
 el('granToggle').addEventListener('click', (e) => {
   const btn = e.target.closest('button');
@@ -646,18 +691,20 @@ function renderDiff(){
     <span><b>${stats.pct}%</b> of Draft A changed</span>
   `;
 
+  panel.classList.toggle('sidebyside', currentView === 'sidebyside');
   panel.innerHTML = '';
-  panel.appendChild(renderStacked(state.a.text, state.b.text, currentGran));
+  if (currentView === 'sidebyside'){
+    panel.appendChild(renderSideBySide(state.a.text, state.b.text, currentGran));
+  } else {
+    panel.appendChild(renderStacked(state.a.text, state.b.text, currentGran));
+  }
 }
 
-function renderStacked(textA, textB, gran){
-  const container = document.createElement('div');
-
+function computeGroups(textA, textB){
   const parasA = textA.split(/\n\n+/).filter(p => p.trim());
   const parasB = textB.split(/\n\n+/).filter(p => p.trim());
   const lineDiff = Diff.diffLines(parasA.join('\n'), parasB.join('\n'));
 
-  // coalesce into ordered groups of {type:'common', lines} or {type:'change', removedLines, addedLines}
   const groups = [];
   let i = 0;
   while (i < lineDiff.length){
@@ -678,6 +725,12 @@ function renderStacked(textA, textB, gran){
       groups.push({ type:'change', removedLines, addedLines });
     }
   }
+  return groups;
+}
+
+function renderStacked(textA, textB, gran){
+  const container = document.createElement('div');
+  const groups = computeGroups(textA, textB);
 
   groups.forEach(g => {
     if (g.type === 'common'){
@@ -702,6 +755,51 @@ function renderStacked(textA, textB, gran){
   });
 
   return container;
+}
+
+function renderSideBySide(textA, textB, gran){
+  const wrap = document.createElement('div');
+  wrap.style.display = 'contents';
+
+  const leftCol = document.createElement('div');
+  leftCol.className = 'sbs-col left';
+  leftCol.innerHTML = '<div class="col-head">Draft A · Original</div>';
+
+  const rightCol = document.createElement('div');
+  rightCol.className = 'sbs-col right';
+  rightCol.innerHTML = '<div class="col-head">Draft B · Revised</div>';
+
+  const groups = computeGroups(textA, textB);
+
+  groups.forEach(g => {
+    if (g.type === 'common'){
+      g.lines.forEach(line => {
+        appendPara(leftCol, line, '');
+        appendPara(rightCol, line, '');
+      });
+      return;
+    }
+    const maxLen = Math.max(g.removedLines.length, g.addedLines.length);
+    for (let idx = 0; idx < maxLen; idx++){
+      const oldLine = g.removedLines[idx];
+      const newLine = g.addedLines[idx];
+
+      if (oldLine !== undefined){
+        leftCol.appendChild(buildBlock(oldLine, newLine, gran, 'old'));
+      } else {
+        appendSpacer(leftCol);
+      }
+      if (newLine !== undefined){
+        rightCol.appendChild(buildBlock(oldLine, newLine, gran, 'new'));
+      } else {
+        appendSpacer(rightCol);
+      }
+    }
+  });
+
+  wrap.appendChild(leftCol);
+  wrap.appendChild(rightCol);
+  return wrap;
 }
 
 // side: 'old' shows the cut paragraph, 'new' shows the revised paragraph
@@ -752,6 +850,13 @@ function appendPara(col, text, cls){
   const p = document.createElement('p');
   p.className = 'para' + (cls ? ' ' + cls : '');
   p.textContent = text;
+  col.appendChild(p);
+}
+
+function appendSpacer(col){
+  const p = document.createElement('p');
+  p.className = 'para spacer';
+  p.textContent = '\u00A0';
   col.appendChild(p);
 }
 </script>

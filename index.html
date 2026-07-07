@@ -1,0 +1,837 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Redline — Draft Comparison</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Courier+Prime:wght@400;700&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jsdiff/8.0.2/diff.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/mammoth/1.11.0/mammoth.browser.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js"></script>
+<style>
+  :root{
+    --paper:#F6F3EC;
+    --paper-raised:#FFFDF9;
+    --ink:#221F1B;
+    --ink-soft:#6b6355;
+    --rule:#DAD3C2;
+    --rule-strong:#C7BEA8;
+    --blue:#2E5090;
+    --blue-tint:#E4EAF6;
+    --blue-tint-strong:#CBD8EF;
+    --pink:#AD3A5C;
+    --pink-tint:#F7E5EA;
+    --pink-tint-strong:#F0C9D5;
+    --gold:#B9902A;
+    --gold-dark:#8f6e1c;
+    --shadow: 0 1px 2px rgba(34,31,27,0.06), 0 6px 18px rgba(34,31,27,0.06);
+  }
+  *{box-sizing:border-box;}
+  html,body{margin:0;padding:0;}
+  body{
+    background:
+      radial-gradient(ellipse at top left, #FBF9F3 0%, var(--paper) 55%),
+      var(--paper);
+    color:var(--ink);
+    font-family:'Inter',sans-serif;
+    min-height:100vh;
+    padding:36px 20px 80px;
+  }
+  .wrap{max-width:1180px;margin:0 auto;}
+
+  /* HEADER */
+  header.top{
+    display:flex;
+    align-items:flex-end;
+    justify-content:space-between;
+    gap:20px;
+    margin-bottom:34px;
+    padding-bottom:18px;
+    border-bottom:2px solid var(--ink);
+    flex-wrap:wrap;
+  }
+  .brand{display:flex;align-items:baseline;gap:14px;}
+  .brand h1{
+    font-family:'Courier Prime',monospace;
+    font-weight:700;
+    font-size:34px;
+    letter-spacing:1px;
+    margin:0;
+    text-transform:uppercase;
+  }
+  .brand .slug{
+    font-family:'Courier Prime',monospace;
+    font-size:12px;
+    color:var(--ink-soft);
+    letter-spacing:1.5px;
+    text-transform:uppercase;
+    border:1px solid var(--rule-strong);
+    padding:3px 8px;
+    border-radius:2px;
+    white-space:nowrap;
+  }
+  header.top p{
+    margin:0;
+    font-size:13.5px;
+    color:var(--ink-soft);
+    max-width:340px;
+    line-height:1.5;
+  }
+
+  /* UPLOAD ROW */
+  .upload-row{
+    display:grid;
+    grid-template-columns:1fr auto 1fr;
+    gap:18px;
+    align-items:stretch;
+    margin-bottom:26px;
+  }
+  @media (max-width:760px){
+    .upload-row{grid-template-columns:1fr;}
+    .vs-badge{margin:0 auto;transform:rotate(90deg);}
+  }
+  .slot{
+    position:relative;
+    background:var(--paper-raised);
+    border:1.5px dashed var(--rule-strong);
+    border-radius:6px;
+    padding:22px 22px 18px;
+    box-shadow:var(--shadow);
+    transition:border-color .15s ease, background .15s ease;
+    cursor:pointer;
+    min-height:150px;
+    display:flex;
+    flex-direction:column;
+  }
+  .slot.drag-over{border-color:var(--gold);background:#FFFBF0;}
+  .slot.filled{border-style:solid;cursor:default;}
+  .slot.slot-a.filled{border-color:var(--pink);}
+  .slot.slot-b.filled{border-color:var(--blue);}
+  .tab{
+    position:absolute;
+    top:-11px;left:20px;
+    font-family:'Courier Prime',monospace;
+    font-size:11px;
+    font-weight:700;
+    letter-spacing:1.5px;
+    padding:3px 10px;
+    border-radius:2px;
+    background:var(--ink);
+    color:var(--paper);
+  }
+  .slot-a .tab{background:var(--pink);}
+  .slot-b .tab{background:var(--blue);}
+  .slot .hint{
+    margin-top:auto;
+    font-size:12.5px;
+    color:var(--ink-soft);
+  }
+  .slot input[type=file]{display:none;}
+  .slot .filename{
+    font-weight:600;
+    font-size:15px;
+    margin-top:14px;
+    word-break:break-word;
+  }
+  .slot .filemeta{
+    font-size:12.5px;
+    color:var(--ink-soft);
+    margin-top:4px;
+  }
+  .slot .clear-btn{
+    position:absolute;
+    top:10px;right:10px;
+    background:none;
+    border:none;
+    color:var(--ink-soft);
+    font-size:12px;
+    cursor:pointer;
+    font-family:'Inter',sans-serif;
+    text-decoration:underline;
+  }
+  .slot .placeholder{
+    display:flex;
+    flex-direction:column;
+    gap:6px;
+    margin-top:10px;
+  }
+  .placeholder .big{font-size:14.5px;font-weight:600;}
+  .placeholder .small{font-size:12.5px;color:var(--ink-soft);}
+  .vs-badge{
+    align-self:center;
+    font-family:'Courier Prime',monospace;
+    font-weight:700;
+    color:var(--gold-dark);
+    border:2px solid var(--gold);
+    border-radius:50%;
+    width:46px;height:46px;
+    display:flex;align-items:center;justify-content:center;
+    font-size:13px;
+    background:#FFFBF0;
+  }
+
+  .cta-row{display:flex;justify-content:center;margin-bottom:38px;}
+  button.compare-btn{
+    font-family:'Courier Prime',monospace;
+    font-weight:700;
+    text-transform:uppercase;
+    letter-spacing:2px;
+    font-size:14px;
+    background:var(--gold);
+    color:#fff;
+    border:none;
+    padding:14px 34px;
+    border-radius:3px;
+    cursor:pointer;
+    box-shadow:0 2px 0 var(--gold-dark);
+    transition:transform .1s ease, box-shadow .1s ease;
+  }
+  button.compare-btn:disabled{
+    background:#cfc6b0;
+    box-shadow:0 2px 0 #b8ae95;
+    cursor:not-allowed;
+  }
+  button.compare-btn:not(:disabled):hover{transform:translateY(1px);box-shadow:0 1px 0 var(--gold-dark);}
+  button.compare-btn:not(:disabled):active{transform:translateY(2px);box-shadow:none;}
+
+  .status-line{
+    text-align:center;
+    font-size:13px;
+    color:var(--ink-soft);
+    margin-top:-24px;
+    margin-bottom:30px;
+    min-height:18px;
+  }
+  .status-line.err{color:var(--pink);font-weight:600;}
+
+  /* RESULTS */
+  #results{display:none;}
+  .toolbar{
+    display:flex;
+    flex-wrap:wrap;
+    align-items:center;
+    justify-content:space-between;
+    gap:16px;
+    padding:14px 18px;
+    background:var(--paper-raised);
+    border:1px solid var(--rule);
+    border-radius:6px;
+    margin-bottom:0;
+    box-shadow:var(--shadow);
+  }
+  .toggle-group{display:flex;gap:6px;align-items:center;}
+  .toggle-group .glabel{
+    font-family:'Courier Prime',monospace;
+    font-size:10.5px;
+    letter-spacing:1px;
+    text-transform:uppercase;
+    color:var(--ink-soft);
+    margin-right:4px;
+  }
+  .toggle{
+    display:flex;
+    border:1px solid var(--rule-strong);
+    border-radius:20px;
+    overflow:hidden;
+    background:var(--paper);
+  }
+  .toggle button{
+    border:none;
+    background:transparent;
+    padding:7px 15px;
+    font-family:'Inter',sans-serif;
+    font-size:12.5px;
+    font-weight:600;
+    color:var(--ink-soft);
+    cursor:pointer;
+    transition:background .15s ease,color .15s ease;
+  }
+  .toggle button.active{background:var(--ink);color:var(--paper);}
+
+  .legend{display:flex;gap:14px;align-items:center;flex-wrap:wrap;}
+  .legend .swatch-item{display:flex;align-items:center;gap:6px;font-size:12px;color:var(--ink-soft);}
+  .legend .swatch{width:12px;height:12px;border-radius:2px;display:inline-block;}
+  .swatch.add{background:var(--blue-tint-strong);border:1px solid var(--blue);}
+  .swatch.del{background:var(--pink-tint-strong);border:1px solid var(--pink);}
+
+  .stats-bar{
+    display:flex;gap:22px;flex-wrap:wrap;
+    padding:12px 18px;
+    font-size:13px;
+    color:var(--ink-soft);
+    border:1px solid var(--rule);
+    border-top:none;
+    background:var(--paper);
+  }
+  .stats-bar b{color:var(--ink);font-weight:700;}
+  .stats-bar .add-stat b{color:var(--blue);}
+  .stats-bar .del-stat b{color:var(--pink);}
+
+  .diff-panel{
+    border:1px solid var(--rule);
+    border-top:none;
+    background:var(--paper-raised);
+    border-radius:0 0 6px 6px;
+    padding:28px 34px;
+    box-shadow:var(--shadow);
+    font-family:'Inter',sans-serif;
+    font-size:15.5px;
+    line-height:1.75;
+    max-height:70vh;
+    overflow-y:auto;
+  }
+  .diff-panel.side-by-side{
+    display:grid;
+    grid-template-columns:1fr 1fr;
+    gap:0;
+    padding:0;
+  }
+  .sbs-col{padding:26px 26px;overflow-y:visible;}
+  .sbs-col + .sbs-col{border-left:1px solid var(--rule);}
+  .sbs-col .col-head{
+    font-family:'Courier Prime',monospace;
+    font-size:11px;
+    letter-spacing:1.5px;
+    text-transform:uppercase;
+    color:var(--ink-soft);
+    margin-bottom:14px;
+    padding-bottom:8px;
+    border-bottom:1px solid var(--rule);
+  }
+  .sbs-col.left .col-head{color:var(--pink);}
+  .sbs-col.right .col-head{color:var(--blue);}
+
+  .para{margin:0 0 14px;}
+  .para.spacer{visibility:hidden;margin:0 0 14px;min-height:1em;}
+  ins, .ins{
+    background:var(--blue-tint);
+    color:var(--blue);
+    text-decoration:none;
+    border-radius:2px;
+    padding:0 1px;
+  }
+  del, .del{
+    background:var(--pink-tint);
+    color:var(--pink);
+    text-decoration:line-through;
+    border-radius:2px;
+    padding:0 1px;
+  }
+  .para-added{background:var(--blue-tint);border-left:3px solid var(--blue);padding:6px 10px;border-radius:0 4px 4px 0;}
+  .para-removed{background:var(--pink-tint);border-left:3px solid var(--pink);padding:6px 10px;border-radius:0 4px 4px 0;text-decoration:line-through;}
+
+  .empty-diff{
+    text-align:center;
+    color:var(--ink-soft);
+    font-size:14px;
+    padding:40px 0;
+  }
+
+  .actions-row{
+    display:flex;justify-content:flex-end;gap:10px;margin-top:14px;
+  }
+  .actions-row button{
+    font-family:'Inter',sans-serif;
+    font-size:12.5px;
+    font-weight:600;
+    background:none;
+    border:1px solid var(--rule-strong);
+    color:var(--ink-soft);
+    padding:8px 14px;
+    border-radius:5px;
+    cursor:pointer;
+  }
+  .actions-row button:hover{border-color:var(--ink-soft);color:var(--ink);}
+
+  footer.note{
+    text-align:center;
+    font-size:12px;
+    color:var(--ink-soft);
+    margin-top:40px;
+  }
+
+  @media print{
+    body{padding:0;background:#fff;}
+    .upload-row,.cta-row,.status-line,.toolbar,.actions-row,header .slug,footer.note{display:none !important;}
+    .diff-panel{box-shadow:none;border:none;max-height:none;overflow:visible;}
+  }
+</style>
+</head>
+<body>
+<div class="wrap">
+
+  <header class="top">
+    <div class="brand">
+      <h1>Redline</h1>
+      <span class="slug">Draft Comparison Tool</span>
+    </div>
+    <p>Drop in two versions of a document. See exactly what changed, word for word or page for page.</p>
+  </header>
+
+  <div class="upload-row">
+    <div class="slot slot-a" id="slotA">
+      <span class="tab">Draft A · Original</span>
+      <button class="clear-btn" id="clearA" style="display:none;">remove</button>
+      <input type="file" id="fileA" accept=".docx,.pdf,.txt">
+      <div class="placeholder" id="placeholderA">
+        <span class="big">Drop file or click to choose</span>
+        <span class="small">.docx · .pdf · .txt</span>
+      </div>
+      <div class="hint" id="hintA"></div>
+    </div>
+
+    <div class="vs-badge">VS</div>
+
+    <div class="slot slot-b" id="slotB">
+      <span class="tab">Draft B · Revised</span>
+      <button class="clear-btn" id="clearB" style="display:none;">remove</button>
+      <input type="file" id="fileB" accept=".docx,.pdf,.txt">
+      <div class="placeholder" id="placeholderB">
+        <span class="big">Drop file or click to choose</span>
+        <span class="small">.docx · .pdf · .txt</span>
+      </div>
+      <div class="hint" id="hintB"></div>
+    </div>
+  </div>
+
+  <div class="cta-row">
+    <button class="compare-btn" id="compareBtn" disabled>Compare Drafts</button>
+  </div>
+  <div class="status-line" id="statusLine"></div>
+
+  <div id="results">
+    <div class="toolbar">
+      <div class="toggle-group">
+        <span class="glabel">View</span>
+        <div class="toggle" id="viewToggle">
+          <button data-val="inline" class="active">Inline redline</button>
+          <button data-val="sbs">Side-by-side</button>
+        </div>
+      </div>
+      <div class="toggle-group">
+        <span class="glabel">Granularity</span>
+        <div class="toggle" id="granToggle">
+          <button data-val="word" class="active">Word</button>
+          <button data-val="line">Paragraph</button>
+        </div>
+      </div>
+      <div class="legend">
+        <span class="swatch-item"><span class="swatch add"></span>Added</span>
+        <span class="swatch-item"><span class="swatch del"></span>Cut</span>
+      </div>
+    </div>
+    <div class="stats-bar" id="statsBar"></div>
+    <div class="diff-panel" id="diffPanel"></div>
+    <div class="actions-row">
+      <button id="printBtn">Print / Save PDF</button>
+      <button id="copyBtn">Copy summary</button>
+    </div>
+  </div>
+
+  <footer class="note">Everything runs in your browser — files never leave your machine.</footer>
+</div>
+
+<script>
+pdfjsLib.GlobalWorkerOptions.workerSrc = "https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js";
+
+const state = { a: null, b: null };
+
+function el(id){ return document.getElementById(id); }
+
+function setupSlot(key, fileInputId, slotId, placeholderId, hintId, clearId){
+  const slot = el(slotId);
+  const input = el(fileInputId);
+  const placeholder = el(placeholderId);
+  const hint = el(hintId);
+  const clearBtn = el(clearId);
+
+  slot.addEventListener('click', (e) => {
+    if (e.target === clearBtn) return;
+    if (!state[key]) input.click();
+  });
+
+  input.addEventListener('change', (e) => {
+    if (e.target.files && e.target.files[0]) handleFile(key, e.target.files[0]);
+  });
+
+  ['dragover','dragenter'].forEach(evt => slot.addEventListener(evt, (e) => {
+    e.preventDefault(); slot.classList.add('drag-over');
+  }));
+  ['dragleave','dragend','drop'].forEach(evt => slot.addEventListener(evt, (e) => {
+    e.preventDefault(); slot.classList.remove('drag-over');
+  }));
+  slot.addEventListener('drop', (e) => {
+    if (e.dataTransfer.files && e.dataTransfer.files[0]) handleFile(key, e.dataTransfer.files[0]);
+  });
+
+  clearBtn.addEventListener('click', (e) => {
+    e.stopPropagation();
+    state[key] = null;
+    slot.classList.remove('filled');
+    placeholder.style.display = 'flex';
+    hint.textContent = '';
+    clearBtn.style.display = 'none';
+    input.value = '';
+    updateCompareEnabled();
+    hideResults();
+  });
+}
+
+async function handleFile(key, file){
+  const slot = el(key === 'a' ? 'slotA' : 'slotB');
+  const placeholder = el(key === 'a' ? 'placeholderA' : 'placeholderB');
+  const hint = el(key === 'a' ? 'hintA' : 'hintB');
+  const clearBtn = el(key === 'a' ? 'clearA' : 'clearB');
+
+  setStatus('');
+  hint.textContent = 'Reading…';
+
+  try{
+    const text = await extractText(file);
+    state[key] = { name: file.name, text, wordCount: countWords(text) };
+    placeholder.innerHTML = `<span class="filename">${escapeHtml(file.name)}</span><span class="filemeta">${state[key].wordCount.toLocaleString()} words</span>`;
+    slot.classList.add('filled');
+    clearBtn.style.display = 'block';
+    hint.textContent = '';
+    updateCompareEnabled();
+    hideResults();
+  } catch(err){
+    console.error(err);
+    setStatus('Could not read "' + file.name + '" — ' + (err.message || 'unsupported or corrupt file') , true);
+    hint.textContent = '';
+  }
+}
+
+function countWords(text){
+  const m = text.trim().match(/\S+/g);
+  return m ? m.length : 0;
+}
+
+function escapeHtml(s){
+  return s.replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+}
+
+async function extractText(file){
+  const ext = file.name.split('.').pop().toLowerCase();
+  if (ext === 'docx'){
+    const buf = await file.arrayBuffer();
+    const result = await mammoth.extractRawText({ arrayBuffer: buf });
+    return normalizeParagraphs(result.value);
+  } else if (ext === 'pdf'){
+    return await extractPdfText(file);
+  } else if (ext === 'txt'){
+    const raw = await file.text();
+    return normalizeParagraphs(raw);
+  } else {
+    throw new Error('Unsupported file type. Use .docx, .pdf, or .txt');
+  }
+}
+
+function normalizeParagraphs(raw){
+  return raw
+    .replace(/\r\n/g, '\n')
+    .replace(/\n{3,}/g, '\n\n')
+    .trim();
+}
+
+async function extractPdfText(file){
+  const buf = await file.arrayBuffer();
+  const pdf = await pdfjsLib.getDocument({ data: buf }).promise;
+  let paragraphs = [];
+  for (let p = 1; p <= pdf.numPages; p++){
+    const page = await pdf.getPage(p);
+    const content = await page.getTextContent();
+    const items = content.items;
+    if (!items.length) continue;
+
+    // group text items into lines by y-position
+    const lines = [];
+    let currentLine = null;
+    let lastY = null;
+    const yTolerance = 2;
+    items.forEach(item => {
+      const y = item.transform[5];
+      if (lastY === null || Math.abs(y - lastY) > yTolerance){
+        currentLine = { y, text: item.str, maxHeight: item.height || 10 };
+        lines.push(currentLine);
+      } else {
+        currentLine.text += (currentLine.text.endsWith(' ') || item.str.startsWith(' ') ? '' : ' ') + item.str;
+      }
+      lastY = y;
+    });
+
+    // detect paragraph breaks via gap between successive line y-positions
+    let pageParas = [];
+    let buffer = '';
+    let prevY = null;
+    lines.forEach(line => {
+      const gap = prevY === null ? 0 : Math.abs(prevY - line.y);
+      const lineHeight = line.maxHeight || 10;
+      if (prevY !== null && gap > lineHeight * 1.6){
+        if (buffer.trim()) pageParas.push(buffer.trim());
+        buffer = line.text;
+      } else {
+        buffer = buffer ? buffer + ' ' + line.text : line.text;
+      }
+      prevY = line.y;
+    });
+    if (buffer.trim()) pageParas.push(buffer.trim());
+    paragraphs = paragraphs.concat(pageParas);
+  }
+  return paragraphs.join('\n\n');
+}
+
+function updateCompareEnabled(){
+  el('compareBtn').disabled = !(state.a && state.b);
+}
+
+function setStatus(msg, isErr){
+  const line = el('statusLine');
+  line.textContent = msg;
+  line.classList.toggle('err', !!isErr);
+}
+
+function hideResults(){
+  el('results').style.display = 'none';
+}
+
+setupSlot('a','fileA','slotA','placeholderA','hintA','clearA');
+setupSlot('b','fileB','slotB','placeholderB','hintB','clearB');
+
+let currentView = 'inline';
+let currentGran = 'word';
+
+el('viewToggle').addEventListener('click', (e) => {
+  const btn = e.target.closest('button');
+  if (!btn) return;
+  [...el('viewToggle').children].forEach(b => b.classList.remove('active'));
+  btn.classList.add('active');
+  currentView = btn.dataset.val;
+  renderDiff();
+});
+el('granToggle').addEventListener('click', (e) => {
+  const btn = e.target.closest('button');
+  if (!btn) return;
+  [...el('granToggle').children].forEach(b => b.classList.remove('active'));
+  btn.classList.add('active');
+  currentGran = btn.dataset.val;
+  renderDiff();
+});
+
+el('compareBtn').addEventListener('click', () => {
+  setStatus('');
+  el('results').style.display = 'block';
+  renderDiff();
+  el('results').scrollIntoView({ behavior:'smooth', block:'start' });
+});
+
+el('printBtn').addEventListener('click', () => window.print());
+
+el('copyBtn').addEventListener('click', () => {
+  const stats = computeStats(state.a.text, state.b.text);
+  const summary = `Redline comparison\nDraft A: ${state.a.name} (${state.a.wordCount} words)\nDraft B: ${state.b.name} (${state.b.wordCount} words)\nAdded: ${stats.added} words | Cut: ${stats.removed} words | Changed: ${stats.pct}%`;
+  navigator.clipboard.writeText(summary).then(() => {
+    const btn = el('copyBtn');
+    const orig = btn.textContent;
+    btn.textContent = 'Copied!';
+    setTimeout(() => btn.textContent = orig, 1500);
+  });
+});
+
+function computeStats(textA, textB){
+  const diff = Diff.diffWordsWithSpace(textA, textB);
+  let added = 0, removed = 0;
+  diff.forEach(part => {
+    const words = (part.value.match(/\S+/g) || []).length;
+    if (part.added) added += words;
+    else if (part.removed) removed += words;
+  });
+  const base = Math.max(state.a.wordCount, 1);
+  const pct = Math.round(((added + removed) / base) * 100);
+  return { added, removed, pct };
+}
+
+function renderDiff(){
+  if (!state.a || !state.b) return;
+  const panel = el('diffPanel');
+  const statsBar = el('statsBar');
+  const stats = computeStats(state.a.text, state.b.text);
+
+  statsBar.innerHTML = `
+    <span class="add-stat"><b>+${stats.added}</b> words added</span>
+    <span class="del-stat"><b>&minus;${stats.removed}</b> words cut</span>
+    <span><b>${stats.pct}%</b> of Draft A changed</span>
+  `;
+
+  panel.classList.toggle('side-by-side', currentView === 'sbs');
+  panel.innerHTML = '';
+
+  if (currentView === 'inline'){
+    panel.appendChild(renderInline(state.a.text, state.b.text, currentGran));
+  } else {
+    panel.appendChild(renderSideBySide(state.a.text, state.b.text, currentGran));
+  }
+}
+
+function renderInline(textA, textB, gran){
+  const container = document.createElement('div');
+  if (gran === 'word'){
+    const diff = Diff.diffWordsWithSpace(textA, textB);
+    const p = document.createElement('div');
+    p.className = 'para';
+    diff.forEach(part => {
+      const node = document.createElement(part.added ? 'ins' : part.removed ? 'del' : 'span');
+      node.textContent = part.value;
+      p.appendChild(node);
+    });
+    // split into paragraphs on double newline for readability
+    return splitIntoParaBlocks(p);
+  } else {
+    const parasA = textA.split(/\n\n+/);
+    const parasB = textB.split(/\n\n+/);
+    const diff = Diff.diffLines(parasA.join('\n'), parasB.join('\n'));
+    diff.forEach(part => {
+      const lines = part.value.split('\n').filter(l => l.trim().length);
+      lines.forEach(line => {
+        const p = document.createElement('p');
+        p.className = 'para' + (part.added ? ' para-added' : part.removed ? ' para-removed' : '');
+        p.textContent = line;
+        container.appendChild(p);
+      });
+    });
+    return container;
+  }
+}
+
+function splitIntoParaBlocks(inlineNode){
+  // inlineNode contains mixed span/ins/del children with \n\n inside text; re-split into <p> blocks
+  const container = document.createElement('div');
+  let current = document.createElement('p');
+  current.className = 'para';
+  container.appendChild(current);
+
+  inlineNode.childNodes.forEach(child => {
+    const text = child.textContent;
+    const segments = text.split(/\n\n+/);
+    segments.forEach((seg, i) => {
+      if (i > 0){
+        current = document.createElement('p');
+        current.className = 'para';
+        container.appendChild(current);
+      }
+      if (seg.length === 0) return;
+      const clone = child.cloneNode(false);
+      clone.textContent = seg;
+      current.appendChild(clone);
+    });
+  });
+  return container;
+}
+
+function renderSideBySide(textA, textB, gran){
+  const wrap = document.createElement('div');
+  wrap.style.display = 'contents';
+
+  const leftCol = document.createElement('div');
+  leftCol.className = 'sbs-col left';
+  leftCol.innerHTML = '<div class="col-head">Draft A · Original</div>';
+  const rightCol = document.createElement('div');
+  rightCol.className = 'sbs-col right';
+  rightCol.innerHTML = '<div class="col-head">Draft B · Revised</div>';
+
+  const parasA = textA.split(/\n\n+/).filter(p => p.trim());
+  const parasB = textB.split(/\n\n+/).filter(p => p.trim());
+  const lineDiff = Diff.diffLines(parasA.join('\n'), parasB.join('\n'));
+
+  // coalesce into groups of {removed:[], added:[], common:[]}
+  const groups = [];
+  let i = 0;
+  while (i < lineDiff.length){
+    const part = lineDiff[i];
+    if (!part.added && !part.removed){
+      groups.push({ type:'common', lines: part.value.split('\n').filter(l => l.trim()) });
+      i++;
+    } else {
+      let removedLines = [], addedLines = [];
+      while (i < lineDiff.length && lineDiff[i].removed){
+        removedLines = removedLines.concat(lineDiff[i].value.split('\n').filter(l => l.trim()));
+        i++;
+      }
+      while (i < lineDiff.length && lineDiff[i].added){
+        addedLines = addedLines.concat(lineDiff[i].value.split('\n').filter(l => l.trim()));
+        i++;
+      }
+      groups.push({ type:'change', removedLines, addedLines });
+    }
+  }
+
+  groups.forEach(g => {
+    if (g.type === 'common'){
+      g.lines.forEach(line => {
+        appendPara(leftCol, line, '');
+        appendPara(rightCol, line, '');
+      });
+    } else {
+      const maxLen = Math.max(g.removedLines.length, g.addedLines.length);
+      for (let idx = 0; idx < maxLen; idx++){
+        const oldLine = g.removedLines[idx];
+        const newLine = g.addedLines[idx];
+        if (oldLine !== undefined && newLine !== undefined){
+          if (gran === 'word'){
+            const wordDiff = Diff.diffWordsWithSpace(oldLine, newLine);
+            const pOld = document.createElement('p');
+            pOld.className = 'para';
+            const pNew = document.createElement('p');
+            pNew.className = 'para';
+            wordDiff.forEach(part => {
+              if (part.removed){
+                const s = document.createElement('del');
+                s.textContent = part.value;
+                pOld.appendChild(s);
+              } else if (part.added){
+                const s = document.createElement('ins');
+                s.textContent = part.value;
+                pNew.appendChild(s);
+              } else {
+                pOld.appendChild(document.createTextNode(part.value));
+                pNew.appendChild(document.createTextNode(part.value));
+              }
+            });
+            leftCol.appendChild(pOld);
+            rightCol.appendChild(pNew);
+          } else {
+            appendPara(leftCol, oldLine, 'para-removed');
+            appendPara(rightCol, newLine, 'para-added');
+          }
+        } else if (oldLine !== undefined){
+          appendPara(leftCol, oldLine, 'para-removed');
+          appendSpacer(rightCol);
+        } else if (newLine !== undefined){
+          appendSpacer(leftCol);
+          appendPara(rightCol, newLine, 'para-added');
+        }
+      }
+    }
+  });
+
+  wrap.appendChild(leftCol);
+  wrap.appendChild(rightCol);
+  return wrap;
+}
+
+function appendPara(col, text, cls){
+  const p = document.createElement('p');
+  p.className = 'para' + (cls ? ' ' + cls : '');
+  p.textContent = text;
+  col.appendChild(p);
+}
+function appendSpacer(col){
+  const p = document.createElement('p');
+  p.className = 'para spacer';
+  p.textContent = '\u00A0';
+  col.appendChild(p);
+}
+</script>
+</body>
+</html>

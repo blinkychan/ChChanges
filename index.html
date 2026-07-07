@@ -279,31 +279,10 @@
     line-height:1.75;
     max-height:70vh;
     overflow-y:auto;
-    display:grid;
-    grid-template-columns:1fr 1fr;
-    gap:0;
+    padding:28px 34px;
   }
-  @media (max-width:760px){
-    .diff-panel{grid-template-columns:1fr;max-height:none;}
-    .sbs-col + .sbs-col{border-left:none;border-top:1px solid var(--rule);}
-  }
-  .sbs-col{padding:26px 26px;overflow-y:visible;}
-  .sbs-col + .sbs-col{border-left:1px solid var(--rule);}
-  .sbs-col .col-head{
-    font-family:'Courier Prime',monospace;
-    font-size:11px;
-    letter-spacing:1.5px;
-    text-transform:uppercase;
-    color:var(--ink-soft);
-    margin-bottom:14px;
-    padding-bottom:8px;
-    border-bottom:1px solid var(--rule);
-  }
-  .sbs-col.left .col-head{color:var(--pink);}
-  .sbs-col.right .col-head{color:var(--blue);}
 
-  .para{margin:0 0 14px;}
-  .para.spacer{visibility:hidden;margin:0 0 14px;min-height:1em;}
+  .para{margin:0 0 16px;}
   ins, .ins{
     background:var(--blue-tint);
     color:var(--blue);
@@ -318,6 +297,25 @@
     border-radius:2px;
     padding:0 1px;
   }
+
+  .change-block{margin:0 0 22px;}
+  .block{padding:8px 14px;border-radius:0 4px 4px 0;margin:0 0 4px;}
+  .block-old{background:var(--pink-tint);border-left:3px solid var(--pink);}
+  .block-new{background:var(--blue-tint);border-left:3px solid var(--blue);margin-bottom:0;}
+  .block-old.whole{text-decoration:line-through;color:var(--pink);}
+  .block-new.whole{color:var(--blue);}
+  .block-label{
+    display:block;
+    font-family:'Courier Prime',monospace;
+    font-size:10px;
+    letter-spacing:1.5px;
+    text-transform:uppercase;
+    margin-bottom:4px;
+  }
+  .block-old .block-label{color:var(--pink);}
+  .block-new .block-label{color:var(--blue);}
+  .block p{margin:0;}
+
   .para-added{background:var(--blue-tint);border-left:3px solid var(--blue);padding:6px 10px;border-radius:0 4px 4px 0;}
   .para-removed{background:var(--pink-tint);border-left:3px solid var(--pink);padding:6px 10px;border-radius:0 4px 4px 0;text-decoration:line-through;}
 
@@ -649,81 +647,105 @@ function renderDiff(){
   `;
 
   panel.innerHTML = '';
-  panel.appendChild(renderTwoColumn(state.a.text, state.b.text, currentGran));
+  panel.appendChild(renderStacked(state.a.text, state.b.text, currentGran));
 }
 
-function renderTwoColumn(textA, textB, gran){
-  const wrap = document.createElement('div');
-  wrap.style.display = 'contents';
-
-  const leftCol = document.createElement('div');
-  leftCol.className = 'sbs-col left';
-  leftCol.innerHTML = '<div class="col-head">Draft A · Original</div>';
-  textA.split(/\n\n+/).forEach(t => { if (t.trim()) appendPara(leftCol, t, ''); });
-
-  const rightCol = document.createElement('div');
-  rightCol.className = 'sbs-col right';
-  rightCol.innerHTML = '<div class="col-head">Draft B · Revised (changes marked)</div>';
-  rightCol.appendChild(renderMarkedRevision(textA, textB, gran));
-
-  wrap.appendChild(leftCol);
-  wrap.appendChild(rightCol);
-  return wrap;
-}
-
-function renderMarkedRevision(textA, textB, gran){
+function renderStacked(textA, textB, gran){
   const container = document.createElement('div');
-  container.style.display = 'contents';
 
-  if (gran === 'word'){
-    const diff = Diff.diffWordsWithSpace(textA, textB);
-    const flow = document.createElement('div');
-    diff.forEach(part => {
-      const node = document.createElement(part.added ? 'ins' : part.removed ? 'del' : 'span');
-      node.textContent = part.value;
-      flow.appendChild(node);
-    });
-    return splitIntoParaBlocks(flow);
-  } else {
-    const parasA = textA.split(/\n\n+/).filter(p => p.trim());
-    const parasB = textB.split(/\n\n+/).filter(p => p.trim());
-    const diff = Diff.diffLines(parasA.join('\n'), parasB.join('\n'));
-    diff.forEach(part => {
-      const lines = part.value.split('\n').filter(l => l.trim().length);
-      lines.forEach(line => {
-        const p = document.createElement('p');
-        p.className = 'para' + (part.added ? ' para-added' : part.removed ? ' para-removed' : '');
-        p.textContent = line;
-        container.appendChild(p);
-      });
-    });
-    return container;
-  }
-}
+  const parasA = textA.split(/\n\n+/).filter(p => p.trim());
+  const parasB = textB.split(/\n\n+/).filter(p => p.trim());
+  const lineDiff = Diff.diffLines(parasA.join('\n'), parasB.join('\n'));
 
-function splitIntoParaBlocks(inlineNode){
-  // inlineNode contains mixed span/ins/del children with \n\n inside text; re-split into <p> blocks
-  const container = document.createElement('div');
-  let current = document.createElement('p');
-  current.className = 'para';
-  container.appendChild(current);
-
-  inlineNode.childNodes.forEach(child => {
-    const text = child.textContent;
-    const segments = text.split(/\n\n+/);
-    segments.forEach((seg, i) => {
-      if (i > 0){
-        current = document.createElement('p');
-        current.className = 'para';
-        container.appendChild(current);
+  // coalesce into ordered groups of {type:'common', lines} or {type:'change', removedLines, addedLines}
+  const groups = [];
+  let i = 0;
+  while (i < lineDiff.length){
+    const part = lineDiff[i];
+    if (!part.added && !part.removed){
+      groups.push({ type:'common', lines: part.value.split('\n').filter(l => l.trim()) });
+      i++;
+    } else {
+      let removedLines = [], addedLines = [];
+      while (i < lineDiff.length && lineDiff[i].removed){
+        removedLines = removedLines.concat(lineDiff[i].value.split('\n').filter(l => l.trim()));
+        i++;
       }
-      if (seg.length === 0) return;
-      const clone = child.cloneNode(false);
-      clone.textContent = seg;
-      current.appendChild(clone);
-    });
+      while (i < lineDiff.length && lineDiff[i].added){
+        addedLines = addedLines.concat(lineDiff[i].value.split('\n').filter(l => l.trim()));
+        i++;
+      }
+      groups.push({ type:'change', removedLines, addedLines });
+    }
+  }
+
+  groups.forEach(g => {
+    if (g.type === 'common'){
+      g.lines.forEach(line => appendPara(container, line, ''));
+      return;
+    }
+    const maxLen = Math.max(g.removedLines.length, g.addedLines.length);
+    for (let idx = 0; idx < maxLen; idx++){
+      const oldLine = g.removedLines[idx];
+      const newLine = g.addedLines[idx];
+      const wrapper = document.createElement('div');
+      wrapper.className = 'change-block';
+
+      if (oldLine !== undefined){
+        wrapper.appendChild(buildBlock(oldLine, newLine, gran, 'old'));
+      }
+      if (newLine !== undefined){
+        wrapper.appendChild(buildBlock(oldLine, newLine, gran, 'new'));
+      }
+      container.appendChild(wrapper);
+    }
   });
+
   return container;
+}
+
+// side: 'old' shows the cut paragraph, 'new' shows the revised paragraph
+function buildBlock(oldLine, newLine, gran, side){
+  const block = document.createElement('div');
+  block.className = 'block ' + (side === 'old' ? 'block-old' : 'block-new');
+
+  const label = document.createElement('span');
+  label.className = 'block-label';
+  label.textContent = side === 'old' ? 'Cut' : 'Revised';
+  block.appendChild(label);
+
+  const p = document.createElement('p');
+
+  if (oldLine !== undefined && newLine !== undefined && gran === 'word'){
+    // word-level: only mark the specific words that changed, rest stays plain
+    const wordDiff = Diff.diffWordsWithSpace(oldLine, newLine);
+    wordDiff.forEach(part => {
+      if (side === 'old'){
+        if (part.removed){
+          const s = document.createElement('del');
+          s.textContent = part.value;
+          p.appendChild(s);
+        } else if (!part.added){
+          p.appendChild(document.createTextNode(part.value));
+        }
+      } else {
+        if (part.added){
+          const s = document.createElement('ins');
+          s.textContent = part.value;
+          p.appendChild(s);
+        } else if (!part.removed){
+          p.appendChild(document.createTextNode(part.value));
+        }
+      }
+    });
+  } else {
+    // paragraph-level, or a wholly added/removed paragraph: mark the whole block
+    block.classList.add('whole');
+    p.textContent = side === 'old' ? oldLine : newLine;
+  }
+
+  block.appendChild(p);
+  return block;
 }
 
 function appendPara(col, text, cls){

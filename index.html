@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Redline — Draft Comparison</title>
+<title>Ch-Changes — Draft Comparison</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=Courier+Prime:wght@400;700&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
 <script src="https://cdnjs.cloudflare.com/ajax/libs/jsdiff/8.0.2/diff.min.js"></script>
@@ -273,19 +273,19 @@
     border-top:none;
     background:var(--paper-raised);
     border-radius:0 0 6px 6px;
-    padding:28px 34px;
     box-shadow:var(--shadow);
     font-family:'Inter',sans-serif;
     font-size:15.5px;
     line-height:1.75;
     max-height:70vh;
     overflow-y:auto;
-  }
-  .diff-panel.side-by-side{
     display:grid;
     grid-template-columns:1fr 1fr;
     gap:0;
-    padding:0;
+  }
+  @media (max-width:760px){
+    .diff-panel{grid-template-columns:1fr;max-height:none;}
+    .sbs-col + .sbs-col{border-left:none;border-top:1px solid var(--rule);}
   }
   .sbs-col{padding:26px 26px;overflow-y:visible;}
   .sbs-col + .sbs-col{border-left:1px solid var(--rule);}
@@ -363,7 +363,7 @@
 
   <header class="top">
     <div class="brand">
-      <h1>Redline</h1>
+      <h1>Ch-Changes</h1>
       <span class="slug">Draft Comparison Tool</span>
     </div>
     <p>Drop in two versions of a document. See exactly what changed, word for word or page for page.</p>
@@ -402,13 +402,6 @@
 
   <div id="results">
     <div class="toolbar">
-      <div class="toggle-group">
-        <span class="glabel">View</span>
-        <div class="toggle" id="viewToggle">
-          <button data-val="inline" class="active">Inline redline</button>
-          <button data-val="sbs">Side-by-side</button>
-        </div>
-      </div>
       <div class="toggle-group">
         <span class="glabel">Granularity</span>
         <div class="toggle" id="granToggle">
@@ -537,7 +530,7 @@ function normalizeParagraphs(raw){
 
 async function extractPdfText(file){
   const buf = await file.arrayBuffer();
-  const pdf = await pdfjsLib.getDocument({ data: buf }).promise;
+  const pdf = await pdfjsLib.getDocument({ data: buf, disableWorker: true }).promise;
   let paragraphs = [];
   for (let p = 1; p <= pdf.numPages; p++){
     const page = await pdf.getPage(p);
@@ -599,17 +592,8 @@ function hideResults(){
 setupSlot('a','fileA','slotA','placeholderA','hintA','clearA');
 setupSlot('b','fileB','slotB','placeholderB','hintB','clearB');
 
-let currentView = 'inline';
 let currentGran = 'word';
 
-el('viewToggle').addEventListener('click', (e) => {
-  const btn = e.target.closest('button');
-  if (!btn) return;
-  [...el('viewToggle').children].forEach(b => b.classList.remove('active'));
-  btn.classList.add('active');
-  currentView = btn.dataset.val;
-  renderDiff();
-});
 el('granToggle').addEventListener('click', (e) => {
   const btn = e.target.closest('button');
   if (!btn) return;
@@ -630,7 +614,7 @@ el('printBtn').addEventListener('click', () => window.print());
 
 el('copyBtn').addEventListener('click', () => {
   const stats = computeStats(state.a.text, state.b.text);
-  const summary = `Redline comparison\nDraft A: ${state.a.name} (${state.a.wordCount} words)\nDraft B: ${state.b.name} (${state.b.wordCount} words)\nAdded: ${stats.added} words | Cut: ${stats.removed} words | Changed: ${stats.pct}%`;
+  const summary = `Ch-Changes comparison\nDraft A: ${state.a.name} (${state.a.wordCount} words)\nDraft B: ${state.b.name} (${state.b.wordCount} words)\nAdded: ${stats.added} words | Cut: ${stats.removed} words | Changed: ${stats.pct}%`;
   navigator.clipboard.writeText(summary).then(() => {
     const btn = el('copyBtn');
     const orig = btn.textContent;
@@ -664,32 +648,45 @@ function renderDiff(){
     <span><b>${stats.pct}%</b> of Draft A changed</span>
   `;
 
-  panel.classList.toggle('side-by-side', currentView === 'sbs');
   panel.innerHTML = '';
-
-  if (currentView === 'inline'){
-    panel.appendChild(renderInline(state.a.text, state.b.text, currentGran));
-  } else {
-    panel.appendChild(renderSideBySide(state.a.text, state.b.text, currentGran));
-  }
+  panel.appendChild(renderTwoColumn(state.a.text, state.b.text, currentGran));
 }
 
-function renderInline(textA, textB, gran){
+function renderTwoColumn(textA, textB, gran){
+  const wrap = document.createElement('div');
+  wrap.style.display = 'contents';
+
+  const leftCol = document.createElement('div');
+  leftCol.className = 'sbs-col left';
+  leftCol.innerHTML = '<div class="col-head">Draft A · Original</div>';
+  textA.split(/\n\n+/).forEach(t => { if (t.trim()) appendPara(leftCol, t, ''); });
+
+  const rightCol = document.createElement('div');
+  rightCol.className = 'sbs-col right';
+  rightCol.innerHTML = '<div class="col-head">Draft B · Revised (changes marked)</div>';
+  rightCol.appendChild(renderMarkedRevision(textA, textB, gran));
+
+  wrap.appendChild(leftCol);
+  wrap.appendChild(rightCol);
+  return wrap;
+}
+
+function renderMarkedRevision(textA, textB, gran){
   const container = document.createElement('div');
+  container.style.display = 'contents';
+
   if (gran === 'word'){
     const diff = Diff.diffWordsWithSpace(textA, textB);
-    const p = document.createElement('div');
-    p.className = 'para';
+    const flow = document.createElement('div');
     diff.forEach(part => {
       const node = document.createElement(part.added ? 'ins' : part.removed ? 'del' : 'span');
       node.textContent = part.value;
-      p.appendChild(node);
+      flow.appendChild(node);
     });
-    // split into paragraphs on double newline for readability
-    return splitIntoParaBlocks(p);
+    return splitIntoParaBlocks(flow);
   } else {
-    const parasA = textA.split(/\n\n+/);
-    const parasB = textB.split(/\n\n+/);
+    const parasA = textA.split(/\n\n+/).filter(p => p.trim());
+    const parasB = textB.split(/\n\n+/).filter(p => p.trim());
     const diff = Diff.diffLines(parasA.join('\n'), parasB.join('\n'));
     diff.forEach(part => {
       const lines = part.value.split('\n').filter(l => l.trim().length);
@@ -729,107 +726,10 @@ function splitIntoParaBlocks(inlineNode){
   return container;
 }
 
-function renderSideBySide(textA, textB, gran){
-  const wrap = document.createElement('div');
-  wrap.style.display = 'contents';
-
-  const leftCol = document.createElement('div');
-  leftCol.className = 'sbs-col left';
-  leftCol.innerHTML = '<div class="col-head">Draft A · Original</div>';
-  const rightCol = document.createElement('div');
-  rightCol.className = 'sbs-col right';
-  rightCol.innerHTML = '<div class="col-head">Draft B · Revised</div>';
-
-  const parasA = textA.split(/\n\n+/).filter(p => p.trim());
-  const parasB = textB.split(/\n\n+/).filter(p => p.trim());
-  const lineDiff = Diff.diffLines(parasA.join('\n'), parasB.join('\n'));
-
-  // coalesce into groups of {removed:[], added:[], common:[]}
-  const groups = [];
-  let i = 0;
-  while (i < lineDiff.length){
-    const part = lineDiff[i];
-    if (!part.added && !part.removed){
-      groups.push({ type:'common', lines: part.value.split('\n').filter(l => l.trim()) });
-      i++;
-    } else {
-      let removedLines = [], addedLines = [];
-      while (i < lineDiff.length && lineDiff[i].removed){
-        removedLines = removedLines.concat(lineDiff[i].value.split('\n').filter(l => l.trim()));
-        i++;
-      }
-      while (i < lineDiff.length && lineDiff[i].added){
-        addedLines = addedLines.concat(lineDiff[i].value.split('\n').filter(l => l.trim()));
-        i++;
-      }
-      groups.push({ type:'change', removedLines, addedLines });
-    }
-  }
-
-  groups.forEach(g => {
-    if (g.type === 'common'){
-      g.lines.forEach(line => {
-        appendPara(leftCol, line, '');
-        appendPara(rightCol, line, '');
-      });
-    } else {
-      const maxLen = Math.max(g.removedLines.length, g.addedLines.length);
-      for (let idx = 0; idx < maxLen; idx++){
-        const oldLine = g.removedLines[idx];
-        const newLine = g.addedLines[idx];
-        if (oldLine !== undefined && newLine !== undefined){
-          if (gran === 'word'){
-            const wordDiff = Diff.diffWordsWithSpace(oldLine, newLine);
-            const pOld = document.createElement('p');
-            pOld.className = 'para';
-            const pNew = document.createElement('p');
-            pNew.className = 'para';
-            wordDiff.forEach(part => {
-              if (part.removed){
-                const s = document.createElement('del');
-                s.textContent = part.value;
-                pOld.appendChild(s);
-              } else if (part.added){
-                const s = document.createElement('ins');
-                s.textContent = part.value;
-                pNew.appendChild(s);
-              } else {
-                pOld.appendChild(document.createTextNode(part.value));
-                pNew.appendChild(document.createTextNode(part.value));
-              }
-            });
-            leftCol.appendChild(pOld);
-            rightCol.appendChild(pNew);
-          } else {
-            appendPara(leftCol, oldLine, 'para-removed');
-            appendPara(rightCol, newLine, 'para-added');
-          }
-        } else if (oldLine !== undefined){
-          appendPara(leftCol, oldLine, 'para-removed');
-          appendSpacer(rightCol);
-        } else if (newLine !== undefined){
-          appendSpacer(leftCol);
-          appendPara(rightCol, newLine, 'para-added');
-        }
-      }
-    }
-  });
-
-  wrap.appendChild(leftCol);
-  wrap.appendChild(rightCol);
-  return wrap;
-}
-
 function appendPara(col, text, cls){
   const p = document.createElement('p');
   p.className = 'para' + (cls ? ' ' + cls : '');
   p.textContent = text;
-  col.appendChild(p);
-}
-function appendSpacer(col){
-  const p = document.createElement('p');
-  p.className = 'para spacer';
-  p.textContent = '\u00A0';
   col.appendChild(p);
 }
 </script>

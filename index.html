@@ -3,373 +3,212 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Ch-Changes — Draft Comparison</title>
+<title>Ch-Changes</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=Courier+Prime:wght@400;700&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
 <script src="https://cdnjs.cloudflare.com/ajax/libs/jsdiff/8.0.2/diff.min.js"></script>
-<script src="https://cdnjs.cloudflare.com/ajax/libs/mammoth/1.11.0/mammoth.browser.min.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/docx-preview@0.3.7/dist/docx-preview.min.js"></script>
 <style>
   :root{
     --paper:#F6F3EC;
     --paper-raised:#FFFDF9;
+    --desk:#E4DFD3;
     --ink:#221F1B;
     --ink-soft:#6b6355;
     --rule:#DAD3C2;
     --rule-strong:#C7BEA8;
     --blue:#2E5090;
-    --blue-tint:#E4EAF6;
-    --blue-tint-strong:#CBD8EF;
     --pink:#AD3A5C;
-    --pink-tint:#F7E5EA;
-    --pink-tint-strong:#F0C9D5;
     --gold:#B9902A;
     --gold-dark:#8f6e1c;
+    /* highlight inks: multiplied over the page so the text stays black */
+    --hl-add:#BCD2F7;
+    --hl-del:#F6B8C6;
+    --hl-chg:#F8DD86;
     --shadow: 0 1px 2px rgba(34,31,27,0.06), 0 6px 18px rgba(34,31,27,0.06);
   }
   *{box-sizing:border-box;}
   html,body{margin:0;padding:0;}
   body{
-    background:
-      radial-gradient(ellipse at top left, #FBF9F3 0%, var(--paper) 55%),
-      var(--paper);
+    background:radial-gradient(ellipse at top left,#FBF9F3 0%,var(--paper) 55%),var(--paper);
     color:var(--ink);
     font-family:'Inter',sans-serif;
     min-height:100vh;
-    padding:36px 20px 80px;
+    padding:32px 20px 60px;
   }
-  .wrap{max-width:1180px;margin:0 auto;}
+  .wrap{max-width:1600px;margin:0 auto;}
+  .narrow{max-width:1180px;margin-left:auto;margin-right:auto;}
 
-  /* HEADER */
   header.top{
-    display:flex;
-    align-items:flex-end;
-    justify-content:space-between;
-    gap:20px;
-    margin-bottom:34px;
-    padding-bottom:18px;
-    border-bottom:2px solid var(--ink);
-    flex-wrap:wrap;
+    display:flex;align-items:flex-end;justify-content:space-between;gap:20px;
+    margin-bottom:30px;padding-bottom:16px;border-bottom:2px solid var(--ink);flex-wrap:wrap;
   }
   .brand{display:flex;align-items:baseline;gap:14px;}
-  .brand h1{
-    font-family:'Courier Prime',monospace;
-    font-weight:700;
-    font-size:34px;
-    letter-spacing:1px;
-    margin:0;
-    text-transform:uppercase;
-  }
+  .brand h1{font-family:'Courier Prime',monospace;font-weight:700;font-size:34px;letter-spacing:1px;margin:0;text-transform:uppercase;}
   .brand .slug{
-    font-family:'Courier Prime',monospace;
-    font-size:12px;
-    color:var(--ink-soft);
-    letter-spacing:1.5px;
-    text-transform:uppercase;
-    border:1px solid var(--rule-strong);
-    padding:3px 8px;
-    border-radius:2px;
-    white-space:nowrap;
+    font-family:'Courier Prime',monospace;font-size:12px;color:var(--ink-soft);letter-spacing:1.5px;
+    text-transform:uppercase;border:1px solid var(--rule-strong);padding:3px 8px;border-radius:2px;white-space:nowrap;
   }
-  header.top p{
-    margin:0;
-    font-size:13.5px;
-    color:var(--ink-soft);
-    max-width:340px;
-    line-height:1.5;
-  }
+  header.top p{margin:0;font-size:13.5px;color:var(--ink-soft);max-width:360px;line-height:1.5;}
 
-  /* UPLOAD ROW */
-  .upload-row{
-    display:grid;
-    grid-template-columns:1fr auto 1fr;
-    gap:18px;
-    align-items:stretch;
-    margin-bottom:26px;
-  }
-  @media (max-width:760px){
-    .upload-row{grid-template-columns:1fr;}
-    .vs-badge{margin:0 auto;transform:rotate(90deg);}
-  }
+  /* upload */
+  .upload-row{display:grid;grid-template-columns:1fr auto 1fr;gap:18px;align-items:stretch;margin-bottom:24px;}
+  @media (max-width:760px){.upload-row{grid-template-columns:1fr;}.vs-badge{margin:0 auto;}}
   .slot{
-    position:relative;
-    background:var(--paper-raised);
-    border:1.5px dashed var(--rule-strong);
-    border-radius:6px;
-    padding:22px 22px 18px;
-    box-shadow:var(--shadow);
-    transition:border-color .15s ease, background .15s ease;
-    cursor:pointer;
-    min-height:150px;
-    display:flex;
-    flex-direction:column;
+    position:relative;background:var(--paper-raised);border:1.5px dashed var(--rule-strong);border-radius:6px;
+    padding:22px 22px 18px;box-shadow:var(--shadow);transition:border-color .15s,background .15s;cursor:pointer;
+    min-height:130px;display:flex;flex-direction:column;
   }
+  .slot:focus-visible{outline:2px solid var(--gold);outline-offset:2px;}
   .slot.drag-over{border-color:var(--gold);background:#FFFBF0;}
   .slot.filled{border-style:solid;cursor:default;}
   .slot.slot-a.filled{border-color:var(--pink);}
   .slot.slot-b.filled{border-color:var(--blue);}
   .tab{
-    position:absolute;
-    top:-11px;left:20px;
-    font-family:'Courier Prime',monospace;
-    font-size:11px;
-    font-weight:700;
-    letter-spacing:1.5px;
-    padding:3px 10px;
-    border-radius:2px;
-    background:var(--ink);
-    color:var(--paper);
+    position:absolute;top:-11px;left:20px;font-family:'Courier Prime',monospace;font-size:11px;font-weight:700;
+    letter-spacing:1.5px;padding:3px 10px;border-radius:2px;color:var(--paper);
   }
   .slot-a .tab{background:var(--pink);}
   .slot-b .tab{background:var(--blue);}
-  .slot .hint{
-    margin-top:auto;
-    font-size:12.5px;
-    color:var(--ink-soft);
-  }
   .slot input[type=file]{display:none;}
-  .slot .filename{
-    font-weight:600;
-    font-size:15px;
-    margin-top:14px;
-    word-break:break-word;
-  }
-  .slot .filemeta{
-    font-size:12.5px;
-    color:var(--ink-soft);
-    margin-top:4px;
-  }
+  .slot .hint{margin-top:auto;font-size:12.5px;color:var(--ink-soft);}
+  .slot .filename{font-weight:600;font-size:15px;margin-top:14px;word-break:break-word;}
+  .slot .filemeta{font-size:12.5px;color:var(--ink-soft);margin-top:4px;}
   .slot .clear-btn{
-    position:absolute;
-    top:10px;right:10px;
-    background:none;
-    border:none;
-    color:var(--ink-soft);
-    font-size:12px;
-    cursor:pointer;
-    font-family:'Inter',sans-serif;
-    text-decoration:underline;
+    position:absolute;top:10px;right:10px;background:none;border:none;color:var(--ink-soft);
+    font-size:12px;cursor:pointer;font-family:'Inter',sans-serif;text-decoration:underline;
   }
-  .slot .placeholder{
-    display:flex;
-    flex-direction:column;
-    gap:6px;
-    margin-top:10px;
-  }
+  .placeholder{display:flex;flex-direction:column;gap:6px;margin-top:10px;}
   .placeholder .big{font-size:14.5px;font-weight:600;}
   .placeholder .small{font-size:12.5px;color:var(--ink-soft);}
   .vs-badge{
-    align-self:center;
-    font-family:'Courier Prime',monospace;
-    font-weight:700;
-    color:var(--gold-dark);
-    border:2px solid var(--gold);
-    border-radius:50%;
-    width:46px;height:46px;
-    display:flex;align-items:center;justify-content:center;
-    font-size:13px;
-    background:#FFFBF0;
+    align-self:center;font-family:'Courier Prime',monospace;font-weight:700;color:var(--gold-dark);
+    border:2px solid var(--gold);border-radius:50%;width:46px;height:46px;display:flex;align-items:center;
+    justify-content:center;font-size:13px;background:#FFFBF0;
   }
-
-  .cta-row{display:flex;justify-content:center;margin-bottom:38px;}
+  .cta-row{display:flex;justify-content:center;margin-bottom:30px;}
   button.compare-btn{
-    font-family:'Courier Prime',monospace;
-    font-weight:700;
-    text-transform:uppercase;
-    letter-spacing:2px;
-    font-size:14px;
-    background:var(--gold);
-    color:#fff;
-    border:none;
-    padding:14px 34px;
-    border-radius:3px;
-    cursor:pointer;
-    box-shadow:0 2px 0 var(--gold-dark);
-    transition:transform .1s ease, box-shadow .1s ease;
+    font-family:'Courier Prime',monospace;font-weight:700;text-transform:uppercase;letter-spacing:2px;font-size:14px;
+    background:var(--gold);color:#fff;border:none;padding:14px 34px;border-radius:3px;cursor:pointer;
+    box-shadow:0 2px 0 var(--gold-dark);transition:transform .1s,box-shadow .1s;
   }
-  button.compare-btn:disabled{
-    background:#cfc6b0;
-    box-shadow:0 2px 0 #b8ae95;
-    cursor:not-allowed;
-  }
+  button.compare-btn:disabled{background:#cfc6b0;box-shadow:0 2px 0 #b8ae95;cursor:not-allowed;}
   button.compare-btn:not(:disabled):hover{transform:translateY(1px);box-shadow:0 1px 0 var(--gold-dark);}
-  button.compare-btn:not(:disabled):active{transform:translateY(2px);box-shadow:none;}
-
-  .status-line{
-    text-align:center;
-    font-size:13px;
-    color:var(--ink-soft);
-    margin-top:-24px;
-    margin-bottom:30px;
-    min-height:18px;
-  }
+  .status-line{text-align:center;font-size:13px;color:var(--ink-soft);margin-top:-18px;margin-bottom:26px;min-height:18px;}
   .status-line.err{color:var(--pink);font-weight:600;}
 
-  /* RESULTS */
+  /* results */
   #results{display:none;}
   .toolbar{
-    display:flex;
-    flex-wrap:wrap;
-    align-items:center;
-    justify-content:space-between;
-    gap:16px;
-    padding:14px 18px;
-    background:var(--paper-raised);
-    border:1px solid var(--rule);
-    border-radius:6px;
-    margin-bottom:0;
-    box-shadow:var(--shadow);
+    display:flex;flex-wrap:wrap;align-items:center;justify-content:space-between;gap:14px 20px;
+    padding:12px 16px;background:var(--paper-raised);border:1px solid var(--rule);border-radius:6px 6px 0 0;
   }
-  .toggle-group{display:flex;gap:6px;align-items:center;}
-  .toggle-group .glabel{
-    font-family:'Courier Prime',monospace;
-    font-size:10.5px;
-    letter-spacing:1px;
-    text-transform:uppercase;
-    color:var(--ink-soft);
-    margin-right:4px;
-  }
-  .toggle{
-    display:flex;
-    border:1px solid var(--rule-strong);
-    border-radius:20px;
-    overflow:hidden;
-    background:var(--paper);
-  }
+  .tgroup{display:flex;gap:8px;align-items:center;}
+  .glabel{font-family:'Courier Prime',monospace;font-size:10.5px;letter-spacing:1px;text-transform:uppercase;color:var(--ink-soft);}
+  .toggle{display:flex;border:1px solid var(--rule-strong);border-radius:20px;overflow:hidden;background:var(--paper);}
   .toggle button{
-    border:none;
-    background:transparent;
-    padding:7px 15px;
-    font-family:'Inter',sans-serif;
-    font-size:12.5px;
-    font-weight:600;
-    color:var(--ink-soft);
-    cursor:pointer;
-    transition:background .15s ease,color .15s ease;
+    border:none;background:transparent;padding:7px 15px;font-family:'Inter',sans-serif;font-size:12.5px;
+    font-weight:600;color:var(--ink-soft);cursor:pointer;
   }
   .toggle button.active{background:var(--ink);color:var(--paper);}
-
+  .nav{display:flex;align-items:center;gap:6px;}
+  .nav button{
+    border:1px solid var(--rule-strong);background:var(--paper);border-radius:5px;padding:6px 11px;
+    font-family:'Inter',sans-serif;font-size:12.5px;font-weight:600;color:var(--ink);cursor:pointer;
+  }
+  .nav button:disabled{opacity:.4;cursor:default;}
+  .nav .pos{font-size:12.5px;color:var(--ink-soft);min-width:86px;text-align:center;font-variant-numeric:tabular-nums;}
+  label.sync{display:flex;align-items:center;gap:6px;font-size:12.5px;font-weight:600;color:var(--ink-soft);cursor:pointer;}
   .legend{display:flex;gap:14px;align-items:center;flex-wrap:wrap;}
-  .legend .swatch-item{display:flex;align-items:center;gap:6px;font-size:12px;color:var(--ink-soft);}
-  .legend .swatch{width:12px;height:12px;border-radius:2px;display:inline-block;}
-  .swatch.add{background:var(--blue-tint-strong);border:1px solid var(--blue);}
-  .swatch.del{background:var(--pink-tint-strong);border:1px solid var(--pink);}
+  .legend span{display:flex;align-items:center;gap:6px;font-size:12px;color:var(--ink-soft);}
+  .legend i{width:13px;height:13px;border-radius:2px;display:inline-block;}
 
   .stats-bar{
-    display:flex;gap:22px;flex-wrap:wrap;
-    padding:12px 18px;
-    font-size:13px;
-    color:var(--ink-soft);
-    border:1px solid var(--rule);
-    border-top:none;
-    background:var(--paper);
+    display:flex;gap:22px;flex-wrap:wrap;padding:10px 16px;font-size:13px;color:var(--ink-soft);
+    border:1px solid var(--rule);border-top:none;background:var(--paper);
   }
-  .stats-bar b{color:var(--ink);font-weight:700;}
-  .stats-bar .add-stat b{color:var(--blue);}
-  .stats-bar .del-stat b{color:var(--pink);}
+  .stats-bar b{color:var(--ink);}
+  .stats-bar .add b{color:var(--blue);}
+  .stats-bar .del b{color:var(--pink);}
 
-  :root{--gold-tint:#F8EBC4;--gold-tint-strong:#F2DB96;}
-  .swatch.chg{background:var(--gold-tint-strong);border:1px solid var(--gold);}
+  .viewer{
+    display:grid;grid-template-columns:1fr 1fr;gap:1px;background:var(--rule);
+    border:1px solid var(--rule);border-top:none;border-radius:0 0 6px 6px;overflow:hidden;box-shadow:var(--shadow);
+  }
+  @media (max-width:900px){.viewer{grid-template-columns:1fr;}}
+  .pane{background:var(--desk);display:flex;flex-direction:column;min-width:0;}
+  .pane-head{
+    display:flex;justify-content:space-between;align-items:baseline;gap:10px;padding:9px 16px;
+    background:var(--paper-raised);border-bottom:1px solid var(--rule);
+  }
+  .pane-head .lbl{font-family:'Courier Prime',monospace;font-size:11px;font-weight:700;letter-spacing:1.5px;text-transform:uppercase;}
+  .pane.a .lbl{color:var(--pink);}
+  .pane.b .lbl{color:var(--blue);}
+  .pane-head .fn{font-size:12px;color:var(--ink-soft);overflow:hidden;text-overflow:ellipsis;white-space:nowrap;}
+  .scroller{height:calc(100vh - 150px);min-height:480px;overflow:auto;padding:20px 18px 40px;position:relative;}
 
-  .diff-panel{
-    border:1px solid var(--rule);
-    border-top:none;
-    background:var(--paper-raised);
-    border-radius:0 0 6px 6px;
-    box-shadow:var(--shadow);
-    font-family:'Inter',sans-serif;
-    font-size:15.5px;
-    line-height:1.75;
-    max-height:75vh;
-    overflow-y:auto;
-  }
-  .diff-head,.diff-row{display:grid;grid-template-columns:1fr 1fr;}
-  .diff-head{
-    position:sticky;top:0;z-index:2;
-    background:var(--paper-raised);
-    border-bottom:1px solid var(--rule);
-  }
-  .diff-head .col-head{
-    font-family:'Courier Prime',monospace;
-    font-size:11px;
-    letter-spacing:1.5px;
-    text-transform:uppercase;
-    padding:12px 28px;
-  }
-  .diff-head .col-head.left{color:var(--pink);}
-  .diff-head .col-head.right{color:var(--blue);}
-  .diff-body{padding:14px 0 20px;}
-  .cell{padding:2px 28px;}
-  .cell + .cell,.diff-head .col-head + .col-head{border-left:1px solid var(--rule);}
-  .cell p{
-    margin:0;
-    padding:5px 10px;
-    border-left:3px solid transparent;
-    border-radius:0 4px 4px 0;
-  }
-  .cell p.p-add{background:var(--blue-tint);border-left-color:var(--blue);}
-  .cell p.p-del{background:var(--pink-tint);border-left-color:var(--pink);}
-  .cell p.p-chg{background:var(--gold-tint);border-left-color:var(--gold);}
-  .hl-add{background:var(--blue-tint-strong);border-radius:2px;padding:1px 2px;}
-  .hl-del{background:var(--pink-tint-strong);border-radius:2px;padding:1px 2px;}
-  .hl-chg{background:var(--gold-tint-strong);border-radius:2px;padding:1px 2px;}
-  @media (max-width:760px){
-    .diff-head,.diff-row{grid-template-columns:1fr;}
-    .cell + .cell,.diff-head .col-head + .col-head{border-left:none;}
-    .cell:empty{display:none;}
-    .diff-panel{max-height:none;}
-  }
+  /* pages */
+  .pdf-page{position:relative;background:#fff;margin:0 auto 18px;box-shadow:0 1px 3px rgba(0,0,0,.12),0 4px 14px rgba(0,0,0,.08);}
+  .pdf-page canvas{position:absolute;inset:0;width:100%;height:100%;display:block;}
+  .hl-layer{position:absolute;inset:0;pointer-events:none;}
+  .hl-layer div{position:absolute;mix-blend-mode:multiply;border-radius:2px;}
+  .hl-layer .add{background:var(--hl-add);}
+  .hl-layer .del{background:var(--hl-del);}
+  .hl-layer .chg{background:var(--hl-chg);}
+  .hl-layer .cur{box-shadow:0 0 0 2px var(--ink);}
+  .pnum{position:absolute;bottom:-16px;right:0;font-size:10px;color:var(--ink-soft);}
 
-  .empty-diff{
-    text-align:center;
-    color:var(--ink-soft);
-    font-size:14px;
-    padding:40px 0;
+  .dom-doc{transform-origin:top left;}
+  .txt-page{
+    background:#fff;width:816px;min-height:1056px;margin:0 auto 18px;padding:96px;
+    box-shadow:0 1px 3px rgba(0,0,0,.12),0 4px 14px rgba(0,0,0,.08);
+    font-family:'Courier Prime',monospace;font-size:16px;line-height:1.25;color:#000;
   }
+  .txt-page p{margin:0 0 16px;white-space:pre-wrap;}
+  .dxA-wrapper,.dxB-wrapper{background:transparent !important;padding:0 !important;}
+  .dxA-wrapper > section,.dxB-wrapper > section{margin-left:auto !important;margin-right:auto !important;}
 
-  .actions-row{
-    display:flex;justify-content:flex-end;gap:10px;margin-top:14px;
-  }
+  .cw.add{background:var(--hl-add);}
+  .cw.del{background:var(--hl-del);}
+  .cw.chg{background:var(--hl-chg);}
+  .cw.cur{box-shadow:0 2px 0 var(--ink),0 -2px 0 var(--ink);}
+  .pb-add{background:var(--hl-add) !important;}
+  .pb-del{background:var(--hl-del) !important;}
+  .pb-chg{background:var(--hl-chg) !important;}
+
+  .loading{font-size:13px;color:var(--ink-soft);text-align:center;padding:40px 0;}
+
+  .actions-row{display:flex;justify-content:flex-end;gap:10px;margin-top:12px;}
   .actions-row button{
-    font-family:'Inter',sans-serif;
-    font-size:12.5px;
-    font-weight:600;
-    background:none;
-    border:1px solid var(--rule-strong);
-    color:var(--ink-soft);
-    padding:8px 14px;
-    border-radius:5px;
-    cursor:pointer;
+    font-family:'Inter',sans-serif;font-size:12.5px;font-weight:600;background:none;border:1px solid var(--rule-strong);
+    color:var(--ink-soft);padding:8px 14px;border-radius:5px;cursor:pointer;
   }
   .actions-row button:hover{border-color:var(--ink-soft);color:var(--ink);}
-
-  footer.note{
-    text-align:center;
-    font-size:12px;
-    color:var(--ink-soft);
-    margin-top:40px;
-  }
+  footer.note{text-align:center;font-size:12px;color:var(--ink-soft);margin-top:36px;}
 
   @media print{
     body{padding:0;background:#fff;}
-    .upload-row,.cta-row,.status-line,.toolbar,.actions-row,header .slug,footer.note{display:none !important;}
-    .diff-panel{box-shadow:none;border:none;max-height:none;overflow:visible;}
+    .upload-row,.cta-row,.status-line,.toolbar,.actions-row,header.top,footer.note{display:none !important;}
+    .viewer{box-shadow:none;border:none;}
+    .scroller{height:auto;overflow:visible;}
+    .pane{background:#fff;}
   }
 </style>
 </head>
 <body>
 <div class="wrap">
-
-  <header class="top">
+  <header class="top narrow">
     <div class="brand">
       <h1>Ch-Changes</h1>
       <span class="slug">Draft Comparison Tool</span>
     </div>
-    <p>Drop in two versions of a document. See exactly what changed, word for word or page for page.</p>
+    <p>Drop in two versions of a draft. See them side by side, with every edit marked.</p>
   </header>
 
-  <div class="upload-row">
-    <div class="slot slot-a" id="slotA">
+  <div class="upload-row narrow">
+    <div class="slot slot-a" id="slotA" tabindex="0">
       <span class="tab">Draft A · Original</span>
       <button class="clear-btn" id="clearA" style="display:none;">remove</button>
       <input type="file" id="fileA" accept=".docx,.pdf,.txt">
@@ -379,10 +218,8 @@
       </div>
       <div class="hint" id="hintA"></div>
     </div>
-
     <div class="vs-badge">VS</div>
-
-    <div class="slot slot-b" id="slotB">
+    <div class="slot slot-b" id="slotB" tabindex="0">
       <span class="tab">Draft B · Revised</span>
       <button class="clear-btn" id="clearB" style="display:none;">remove</button>
       <input type="file" id="fileB" accept=".docx,.pdf,.txt">
@@ -394,76 +231,77 @@
     </div>
   </div>
 
-  <div class="cta-row">
-    <button class="compare-btn" id="compareBtn" disabled>Compare Drafts</button>
-  </div>
+  <div class="cta-row"><button class="compare-btn" id="compareBtn" disabled>Compare Drafts</button></div>
   <div class="status-line" id="statusLine"></div>
 
   <div id="results">
     <div class="toolbar">
-      <div class="toggle-group">
-        <span class="glabel">Granularity</span>
+      <div class="tgroup">
+        <span class="glabel">Mark</span>
         <div class="toggle" id="granToggle">
-          <button data-val="word" class="active">Word</button>
-          <button data-val="line">Paragraph</button>
+          <button data-val="word" class="active">Words</button>
+          <button data-val="para">Paragraphs</button>
         </div>
       </div>
+      <div class="nav">
+        <button id="prevBtn" aria-label="Previous change">‹ Prev</button>
+        <span class="pos" id="navPos">—</span>
+        <button id="nextBtn" aria-label="Next change">Next ›</button>
+      </div>
+      <label class="sync"><input type="checkbox" id="syncChk" checked> Scroll together</label>
       <div class="legend">
-        <span class="swatch-item"><span class="swatch add"></span>Added (revised only)</span>
-        <span class="swatch-item"><span class="swatch del"></span>Removed (original only)</span>
-        <span class="swatch-item"><span class="swatch chg"></span>Changed (both)</span>
+        <span><i style="background:var(--hl-add)"></i>Added</span>
+        <span><i style="background:var(--hl-del)"></i>Removed</span>
+        <span><i style="background:var(--hl-chg)"></i>Changed</span>
       </div>
     </div>
     <div class="stats-bar" id="statsBar"></div>
-    <div class="diff-panel" id="diffPanel"></div>
+    <div class="viewer">
+      <div class="pane a">
+        <div class="pane-head"><span class="lbl">Draft A · Original</span><span class="fn" id="fnA"></span></div>
+        <div class="scroller" id="scrollA"></div>
+      </div>
+      <div class="pane b">
+        <div class="pane-head"><span class="lbl">Draft B · Revised</span><span class="fn" id="fnB"></span></div>
+        <div class="scroller" id="scrollB"></div>
+      </div>
+    </div>
     <div class="actions-row">
       <button id="printBtn">Print / Save PDF</button>
       <button id="copyBtn">Copy summary</button>
     </div>
   </div>
 
-  <footer class="note">Everything runs in your browser — files never leave your machine.</footer>
+  <footer class="note">Everything runs in your browser. Files never leave your machine.</footer>
 </div>
 
 <script>
 pdfjsLib.GlobalWorkerOptions.workerSrc = "https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js";
 
-const state = { a: null, b: null };
+const $ = id => document.getElementById(id);
+const state = { a:null, b:null };
+let gran = 'word';
+let hunks = [];
+let curHunk = -1;
+let eqMap = { a:[], b:[] };   // equal-word mapping: index in this doc -> index in the other doc (or -1)
 
-function el(id){ return document.getElementById(id); }
+/* ---------------- upload ---------------- */
 
-function setupSlot(key, fileInputId, slotId, placeholderId, hintId, clearId){
-  const slot = el(slotId);
-  const input = el(fileInputId);
-  const placeholder = el(placeholderId);
-  const hint = el(hintId);
-  const clearBtn = el(clearId);
-
-  slot.addEventListener('click', (e) => {
-    if (e.target === clearBtn) return;
-    if (!state[key]) input.click();
-  });
-
-  input.addEventListener('change', (e) => {
-    if (e.target.files && e.target.files[0]) handleFile(key, e.target.files[0]);
-  });
-
-  ['dragover','dragenter'].forEach(evt => slot.addEventListener(evt, (e) => {
-    e.preventDefault(); slot.classList.add('drag-over');
-  }));
-  ['dragleave','dragend','drop'].forEach(evt => slot.addEventListener(evt, (e) => {
-    e.preventDefault(); slot.classList.remove('drag-over');
-  }));
-  slot.addEventListener('drop', (e) => {
-    if (e.dataTransfer.files && e.dataTransfer.files[0]) handleFile(key, e.dataTransfer.files[0]);
-  });
-
-  clearBtn.addEventListener('click', (e) => {
+function setupSlot(key){
+  const U = key.toUpperCase();
+  const slot = $('slot'+U), input = $('file'+U), clearBtn = $('clear'+U);
+  const open = () => { if (!state[key]) input.click(); };
+  slot.addEventListener('click', e => { if (e.target !== clearBtn) open(); });
+  slot.addEventListener('keydown', e => { if (e.key === 'Enter' || e.key === ' '){ e.preventDefault(); open(); } });
+  input.addEventListener('change', e => { if (e.target.files[0]) handleFile(key, e.target.files[0]); });
+  ['dragover','dragenter'].forEach(ev => slot.addEventListener(ev, e => { e.preventDefault(); slot.classList.add('drag-over'); }));
+  ['dragleave','dragend','drop'].forEach(ev => slot.addEventListener(ev, e => { e.preventDefault(); slot.classList.remove('drag-over'); }));
+  slot.addEventListener('drop', e => { if (e.dataTransfer.files[0]) handleFile(key, e.dataTransfer.files[0]); });
+  clearBtn.addEventListener('click', e => {
     e.stopPropagation();
     state[key] = null;
     slot.classList.remove('filled');
-    placeholder.style.display = 'flex';
-    hint.textContent = '';
+    $('placeholder'+U).innerHTML = '<span class="big">Drop file or click to choose</span><span class="small">.docx · .pdf · .txt</span>';
     clearBtn.style.display = 'none';
     input.value = '';
     updateCompareEnabled();
@@ -472,330 +310,572 @@ function setupSlot(key, fileInputId, slotId, placeholderId, hintId, clearId){
 }
 
 async function handleFile(key, file){
-  const slot = el(key === 'a' ? 'slotA' : 'slotB');
-  const placeholder = el(key === 'a' ? 'placeholderA' : 'placeholderB');
-  const hint = el(key === 'a' ? 'hintA' : 'hintB');
-  const clearBtn = el(key === 'a' ? 'clearA' : 'clearB');
-
+  const U = key.toUpperCase();
   setStatus('');
-  hint.textContent = 'Reading…';
-
+  $('hint'+U).textContent = 'Reading…';
   try{
-    const text = await extractText(file);
-    state[key] = { name: file.name, text, wordCount: countWords(text) };
-    placeholder.innerHTML = `<span class="filename">${escapeHtml(file.name)}</span><span class="filemeta">${state[key].wordCount.toLocaleString()} words</span>`;
-    slot.classList.add('filled');
-    clearBtn.style.display = 'block';
-    hint.textContent = '';
+    const doc = await loadDoc(file, key);
+    state[key] = doc;
+    $('placeholder'+U).innerHTML =
+      `<span class="filename">${escapeHtml(file.name)}</span><span class="filemeta">${doc.words.length.toLocaleString()} words${doc.kind==='pdf' ? ' · '+doc.pages.length+' pages' : ''}</span>`;
+    $('slot'+U).classList.add('filled');
+    $('clear'+U).style.display = 'block';
+    $('hint'+U).textContent = '';
+    if (!doc.words.length) setStatus(`No text found in "${file.name}". If it's a scanned PDF, it has no selectable text to compare.`, true);
     updateCompareEnabled();
     hideResults();
   } catch(err){
     console.error(err);
-    setStatus('Could not read "' + file.name + '" — ' + (err.message || 'unsupported or corrupt file') , true);
-    hint.textContent = '';
+    $('hint'+U).textContent = '';
+    setStatus(`Couldn't read "${file.name}": ${err.message || 'unsupported or damaged file'}`, true);
   }
 }
 
-function countWords(text){
-  const m = text.trim().match(/\S+/g);
-  return m ? m.length : 0;
-}
+function escapeHtml(s){ return s.replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c])); }
+function updateCompareEnabled(){ $('compareBtn').disabled = !(state.a && state.b); }
+function setStatus(msg, isErr){ const l = $('statusLine'); l.textContent = msg; l.classList.toggle('err', !!isErr); }
+function hideResults(){ $('results').style.display = 'none'; }
 
-function escapeHtml(s){
-  return s.replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
-}
+/* ---------------- loading documents ---------------- */
 
-async function extractText(file){
+async function loadDoc(file, key){
   const ext = file.name.split('.').pop().toLowerCase();
-  if (ext === 'docx'){
-    const buf = await file.arrayBuffer();
-    const result = await mammoth.extractRawText({ arrayBuffer: buf });
-    return normalizeParagraphs(result.value);
-  } else if (ext === 'pdf'){
-    return await extractPdfText(file);
-  } else if (ext === 'txt'){
-    const raw = await file.text();
-    return normalizeParagraphs(raw);
-  } else {
-    throw new Error('Unsupported file type. Use .docx, .pdf, or .txt');
-  }
+  if (ext === 'pdf') return loadPdf(file);
+  if (ext === 'docx') return loadDocx(file, key);
+  if (ext === 'txt') return loadTxt(file);
+  if (ext === 'doc') throw new Error('old .doc format isn\'t supported. Save it as .docx or PDF');
+  throw new Error('use a .docx, .pdf, or .txt file');
 }
 
-function normalizeParagraphs(raw){
-  return raw
-    .replace(/\r\n/g, '\n')
-    .replace(/\n{3,}/g, '\n\n')
-    .trim();
-}
+// PDF: rebuild real words from glyph positions. Some PDFs (Final Draft, many exports)
+// place every letter separately with no space characters, so words must be found by gaps.
+async function loadPdf(file){
+  const pdf = await pdfjsLib.getDocument({ data: await file.arrayBuffer() }).promise;
+  const words = [], pages = [];
+  let lineId = 0, blockId = 0;
 
-async function extractPdfText(file){
-  const buf = await file.arrayBuffer();
-  const pdf = await pdfjsLib.getDocument({ data: buf, disableWorker: true }).promise;
-  let paragraphs = [];
   for (let p = 1; p <= pdf.numPages; p++){
     const page = await pdf.getPage(p);
+    const vp = page.getViewport({ scale:1 });
+    const W = vp.width, H = vp.height;
+    pages.push({ W, H, page });
     const content = await page.getTextContent();
-    const items = content.items;
-    if (!items.length) continue;
 
-    // group text items into lines by y-position
+    // 1. explode text items into glyphs with page coordinates (y down)
+    const glyphs = [];
+    for (const it of content.items){
+      if (!it.str) continue;
+      const tx = pdfjsLib.Util.transform(vp.transform, it.transform);
+      const h = Math.hypot(tx[2], tx[3]) || 10;
+      const x = tx[4], y = tx[5];
+      const n = it.str.length;
+      const cw = (it.width || h * 0.5 * n) / n;
+      for (let i = 0; i < n; i++){
+        glyphs.push({ ch: it.str[i], x0: x + i*cw, x1: x + (i+1)*cw, y, h });
+      }
+    }
+
+    // 2. group glyphs into lines by baseline
     const lines = [];
-    let currentLine = null;
-    let lastY = null;
-    const yTolerance = 2;
-    items.forEach(item => {
-      const y = item.transform[5];
-      if (lastY === null || Math.abs(y - lastY) > yTolerance){
-        currentLine = { y, text: item.str, maxHeight: item.height || 10 };
-        lines.push(currentLine);
-      } else {
-        currentLine.text += (currentLine.text.endsWith(' ') || item.str.startsWith(' ') ? '' : ' ') + item.str;
+    let last = null;
+    for (const g of glyphs){
+      const fits = L => Math.abs(L.y - g.y) <= Math.max(L.h, g.h) * 0.35;
+      let line = (last && fits(last)) ? last : lines.find(fits);
+      if (!line){ line = { y:g.y, h:g.h, glyphs:[] }; lines.push(line); }
+      line.glyphs.push(g);
+      line.h = Math.max(line.h, g.h);
+      last = line;
+    }
+    lines.sort((a,b) => a.y - b.y);
+
+    // 3. split lines into words by whitespace or visible gaps; group lines into paragraphs
+    let prevLine = null;
+    for (const line of lines){
+      line.glyphs.sort((a,b) => a.x0 - b.x0);
+      if (!prevLine || (line.y - prevLine.y) > prevLine.h * 1.45) blockId++;
+      lineId++;
+      let cur = null;
+      const flush = () => {
+        if (!cur) return;
+        words.push({
+          t: cur.t, page: p-1, line: lineId, block: blockId,
+          x: cur.x0 / W, w: (cur.x1 - cur.x0) / W,
+          y: (line.y - line.h*0.84) / H, h: (line.h*1.08) / H,
+        });
+        cur = null;
+      };
+      let prev = null;
+      for (const g of line.glyphs){
+        if (/\s/.test(g.ch)){ flush(); prev = g; continue; }
+        if (prev && cur && (g.x0 - prev.x1) > g.h * 0.16) flush();
+        if (!cur) cur = { t:'', x0:g.x0, x1:g.x1 };
+        cur.t += g.ch;
+        cur.x1 = Math.max(cur.x1, g.x1);
+        prev = g;
       }
-      lastY = y;
-    });
-
-    // detect paragraph breaks via gap between successive line y-positions
-    let pageParas = [];
-    let buffer = '';
-    let prevY = null;
-    lines.forEach(line => {
-      const gap = prevY === null ? 0 : Math.abs(prevY - line.y);
-      const lineHeight = line.maxHeight || 10;
-      if (prevY !== null && gap > lineHeight * 1.6){
-        if (buffer.trim()) pageParas.push(buffer.trim());
-        buffer = line.text;
-      } else {
-        buffer = buffer ? buffer + ' ' + line.text : line.text;
-      }
-      prevY = line.y;
-    });
-    if (buffer.trim()) pageParas.push(buffer.trim());
-    paragraphs = paragraphs.concat(pageParas);
-  }
-  return paragraphs.join('\n\n');
-}
-
-function updateCompareEnabled(){
-  el('compareBtn').disabled = !(state.a && state.b);
-}
-
-function setStatus(msg, isErr){
-  const line = el('statusLine');
-  line.textContent = msg;
-  line.classList.toggle('err', !!isErr);
-}
-
-function hideResults(){
-  el('results').style.display = 'none';
-}
-
-setupSlot('a','fileA','slotA','placeholderA','hintA','clearA');
-setupSlot('b','fileB','slotB','placeholderB','hintB','clearB');
-
-let currentGran = 'word';
-el('granToggle').addEventListener('click', (e) => {
-  const btn = e.target.closest('button');
-  if (!btn) return;
-  [...el('granToggle').children].forEach(b => b.classList.remove('active'));
-  btn.classList.add('active');
-  currentGran = btn.dataset.val;
-  renderDiff();
-});
-
-el('compareBtn').addEventListener('click', () => {
-  setStatus('');
-  el('results').style.display = 'block';
-  renderDiff();
-  el('results').scrollIntoView({ behavior:'smooth', block:'start' });
-});
-
-el('printBtn').addEventListener('click', () => window.print());
-
-el('copyBtn').addEventListener('click', () => {
-  const stats = computeStats(state.a.text, state.b.text);
-  const summary = `Ch-Changes comparison\nDraft A: ${state.a.name} (${state.a.wordCount} words)\nDraft B: ${state.b.name} (${state.b.wordCount} words)\nAdded: ${stats.added} words | Cut: ${stats.removed} words | Changed: ${stats.pct}%`;
-  navigator.clipboard.writeText(summary).then(() => {
-    const btn = el('copyBtn');
-    const orig = btn.textContent;
-    btn.textContent = 'Copied!';
-    setTimeout(() => btn.textContent = orig, 1500);
-  });
-});
-
-function computeStats(textA, textB){
-  const diff = Diff.diffWordsWithSpace(textA, textB);
-  let added = 0, removed = 0;
-  diff.forEach(part => {
-    const words = (part.value.match(/\S+/g) || []).length;
-    if (part.added) added += words;
-    else if (part.removed) removed += words;
-  });
-  const base = Math.max(state.a.wordCount, 1);
-  const pct = Math.round(((added + removed) / base) * 100);
-  return { added, removed, pct };
-}
-
-function renderDiff(){
-  if (!state.a || !state.b) return;
-  const panel = el('diffPanel');
-  const stats = computeStats(state.a.text, state.b.text);
-
-  el('statsBar').innerHTML = `
-    <span class="add-stat"><b>+${stats.added}</b> words added</span>
-    <span class="del-stat"><b>&minus;${stats.removed}</b> words removed</span>
-    <span><b>${stats.pct}%</b> of Draft A changed</span>
-  `;
-
-  panel.innerHTML = '';
-  panel.appendChild(renderComparison(state.a.text, state.b.text, currentGran));
-}
-
-function computeGroups(textA, textB){
-  const parasA = textA.split(/\n\n+/).filter(p => p.trim());
-  const parasB = textB.split(/\n\n+/).filter(p => p.trim());
-  const lineDiff = Diff.diffLines(parasA.join('\n'), parasB.join('\n'));
-
-  const groups = [];
-  let i = 0;
-  while (i < lineDiff.length){
-    const part = lineDiff[i];
-    if (!part.added && !part.removed){
-      groups.push({ type:'common', lines: part.value.split('\n').filter(l => l.trim()) });
-      i++;
-    } else {
-      let removedLines = [], addedLines = [];
-      while (i < lineDiff.length && lineDiff[i].removed){
-        removedLines = removedLines.concat(lineDiff[i].value.split('\n').filter(l => l.trim()));
-        i++;
-      }
-      while (i < lineDiff.length && lineDiff[i].added){
-        addedLines = addedLines.concat(lineDiff[i].value.split('\n').filter(l => l.trim()));
-        i++;
-      }
-      groups.push({ type:'change', removedLines, addedLines });
+      flush();
+      prevLine = line;
     }
   }
-  return groups;
+  return { kind:'pdf', name:file.name, pdf, pages, words };
 }
 
-// Are two paragraphs versions of the same thing (edited), or unrelated (one cut, one new)?
-function looksRelated(a, b){
-  const na = (a.match(/\S+/g) || []).length;
-  const nb = (b.match(/\S+/g) || []).length;
-  let same = 0;
-  Diff.diffWords(a, b).forEach(p => {
-    if (!p.added && !p.removed) same += (p.value.match(/\S+/g) || []).length;
-  });
-  return same / Math.max(na, nb, 1) >= 0.35;
-}
-
-function makeP(text, cls){
-  const p = document.createElement('p');
-  if (cls) p.className = cls;
-  if (text !== undefined) p.textContent = text;
-  return p;
-}
-
-function mark(p, cls, text){
-  if (!text.trim()){ p.appendChild(document.createTextNode(text)); return; }
-  const span = document.createElement('span');
-  span.className = cls;
-  span.textContent = text;
-  p.appendChild(span);
-}
-
-// Word-level markup for an edited paragraph pair
-function wordMarkup(oldLine, newLine){
-  const left = makeP(), right = makeP();
-  const parts = Diff.diffWordsWithSpace(oldLine, newLine);
-  for (let i = 0; i < parts.length; i++){
-    const part = parts[i];
-    const next = parts[i + 1];
-    if (!part.added && !part.removed){
-      left.appendChild(document.createTextNode(part.value));
-      right.appendChild(document.createTextNode(part.value));
-    } else if (part.removed && next && next.added){
-      mark(left, 'hl-chg', part.value);
-      mark(right, 'hl-chg', next.value);
-      i++;
-    } else if (part.added && next && next.removed){
-      mark(right, 'hl-chg', part.value);
-      mark(left, 'hl-chg', next.value);
-      i++;
-    } else if (part.removed){
-      mark(left, 'hl-del', part.value);
-    } else {
-      mark(right, 'hl-add', part.value);
-    }
-  }
-  return { left, right };
-}
-
-function addRow(body, leftNode, rightNode){
-  const row = document.createElement('div');
-  row.className = 'diff-row';
-  const l = document.createElement('div'); l.className = 'cell';
-  const r = document.createElement('div'); r.className = 'cell';
-  if (leftNode) l.appendChild(leftNode);
-  if (rightNode) r.appendChild(rightNode);
-  row.appendChild(l); row.appendChild(r);
-  body.appendChild(row);
-}
-
-function renderComparison(textA, textB, gran){
-  const frag = document.createDocumentFragment();
-
-  const head = document.createElement('div');
-  head.className = 'diff-head';
-  head.innerHTML = '<div class="col-head left">Draft A · Original</div><div class="col-head right">Draft B · Revised</div>';
-  frag.appendChild(head);
-
+async function loadDocx(file, key){
+  const holder = document.createElement('div');
+  holder.className = 'dom-doc';
+  const styles = document.createElement('div');
   const body = document.createElement('div');
-  body.className = 'diff-body';
-  frag.appendChild(body);
+  holder.append(styles, body);
+  await docx.renderAsync(await file.arrayBuffer(), body, styles, {
+    className: 'dx' + key.toUpperCase(),
+    inWrapper: true, breakPages: true, ignoreLastRenderedPageBreak: false,
+    renderHeaders: true, renderFooters: true, renderFootnotes: true, experimental: true,
+  });
+  const words = tokenizeDom(body);
+  return { kind:'dom', name:file.name, holder, words };
+}
 
-  computeGroups(textA, textB).forEach(g => {
-    if (g.type === 'common'){
-      g.lines.forEach(line => addRow(body, makeP(line), makeP(line)));
+async function loadTxt(file){
+  const raw = (await file.text()).replace(/\r\n/g, '\n');
+  const holder = document.createElement('div');
+  holder.className = 'dom-doc';
+  const page = document.createElement('div');
+  page.className = 'txt-page';
+  raw.split(/\n\s*\n/).forEach(chunk => {
+    if (!chunk.trim()) return;
+    const p = document.createElement('p');
+    p.textContent = chunk;
+    page.appendChild(p);
+  });
+  holder.appendChild(page);
+  return { kind:'dom', name:file.name, holder, words: tokenizeDom(page) };
+}
+
+// Wrap every word in rendered HTML in a span, keeping the original formatting intact.
+// A word split across formatting runs (e.g. half bold) stays one word.
+function tokenizeDom(root){
+  const words = [];
+  const blockIds = new Map();
+  let nextBlock = 0;
+  const walker = document.createTreeWalker(root, NodeFilter.SHOW_TEXT, {
+    acceptNode: n => n.parentElement.closest('style,script') ? NodeFilter.FILTER_REJECT : NodeFilter.FILTER_ACCEPT
+  });
+  const nodes = [];
+  while (walker.nextNode()) nodes.push(walker.currentNode);
+
+  let lastWord = null, joinable = false, lastBlock = null;
+  for (const node of nodes){
+    const text = node.nodeValue;
+    if (!text) continue;
+    const blockEl = node.parentElement.closest('p,li,h1,h2,h3,h4,h5,h6,td,th,pre') || node.parentElement;
+    if (blockEl !== lastBlock){ joinable = false; lastBlock = blockEl; }
+    if (!blockIds.has(blockEl)) blockIds.set(blockEl, nextBlock++);
+    const block = blockIds.get(blockEl);
+
+    const frag = document.createDocumentFragment();
+    text.split(/(\s+)/).forEach((tok, i) => {
+      if (!tok) return;
+      if (/^\s+$/.test(tok)){ frag.appendChild(document.createTextNode(tok)); joinable = false; return; }
+      const span = document.createElement('span');
+      span.className = 'cw';
+      span.textContent = tok;
+      frag.appendChild(span);
+      if (i === 0 && joinable && lastWord){
+        lastWord.t += tok;
+        lastWord.els.push(span);
+      } else {
+        lastWord = { t: tok, els:[span], block, blockEl };
+        words.push(lastWord);
+      }
+      joinable = true;
+    });
+    node.parentNode.replaceChild(frag, node);
+  }
+  return words;
+}
+
+/* ---------------- diffing ---------------- */
+
+const norm = s => s.replace(/[‘’ʼ]/g, "'").replace(/[“”]/g, '"').replace(/[–—]/g, '-').replace(/…/g, '...');
+
+function computeDiff(A, B){
+  const parts = Diff.diffArrays(A.words.map(w => norm(w.t)), B.words.map(w => norm(w.t)));
+  A.words.forEach(w => { w.state = null; w.hunk = -1; });
+  B.words.forEach(w => { w.state = null; w.hunk = -1; });
+  eqMap = { a: new Array(A.words.length).fill(-1), b: new Array(B.words.length).fill(-1) };
+
+  // ops: runs of equal / removed / added
+  const ops = [];
+  let ia = 0, ib = 0;
+  for (const part of parts){
+    const n = part.count != null ? part.count : part.value.length;
+    if (part.removed){ ops.push({ t:'del', a:range(ia, n), b:[], ia, ib }); ia += n; }
+    else if (part.added){ ops.push({ t:'add', a:[], b:range(ib, n), ia, ib }); ib += n; }
+    else { ops.push({ t:'eq', a:range(ia, n), b:range(ib, n), ia, ib }); ia += n; ib += n; }
+  }
+
+  // group consecutive edits into hunks; a single unchanged word wedged between edits joins the hunk
+  hunks = [];
+  let h = null;
+  ops.forEach((op, k) => {
+    const sandwiched = op.t === 'eq' && op.a.length === 1 && h && ops[k+1] && ops[k+1].t !== 'eq';
+    if (op.t === 'eq' && !sandwiched){
+      if (h){ hunks.push(h); h = null; }
+      op.a.forEach((x, j) => { eqMap.a[x] = op.b[j]; eqMap.b[op.b[j]] = x; });
       return;
     }
-    const n = Math.max(g.removedLines.length, g.addedLines.length);
-    for (let i = 0; i < n; i++){
-      const o = g.removedLines[i];
-      const w = g.addedLines[i];
+    if (!h) h = { a:[], b:[], ia:op.ia, ib:op.ib };
+    h.a.push(...op.a); h.b.push(...op.b);
+  });
+  if (h) hunks.push(h);
 
-      if (o !== undefined && w !== undefined && looksRelated(o, w)){
-        if (gran === 'word'){
-          const m = wordMarkup(o, w);
-          addRow(body, m.left, m.right);
-        } else {
-          addRow(body, makeP(o, 'p-chg'), makeP(w, 'p-chg'));
-        }
-      } else {
-        // unrelated: removed text shows on the original side only, new text on the revised side only
-        addRow(body,
-          o !== undefined ? makeP(o, 'p-del') : null,
-          w !== undefined ? makeP(w, 'p-add') : null);
+  hunks.forEach((hk, id) => {
+    hk.type = hk.a.length && hk.b.length ? 'chg' : hk.a.length ? 'del' : 'add';
+    hk.a.forEach(i => { A.words[i].state = hk.type; A.words[i].hunk = id; });
+    hk.b.forEach(i => { B.words[i].state = hk.type; B.words[i].hunk = id; });
+  });
+}
+function range(s, n){ const r = new Array(n); for (let i = 0; i < n; i++) r[i] = s + i; return r; }
+
+// Paragraph mode: a paragraph is red/blue only if it was cut/added whole; any partial edit is gold,
+// and gold carries over to its matching paragraph on the other side.
+function computeBlockStates(A, B){
+  const blockState = (doc, whole) => {
+    const m = new Map();
+    for (const w of doc.words){
+      const s = m.get(w.block) || { n:0, edited:0, whole:0 };
+      s.n++; if (w.state){ s.edited++; if (w.state === whole) s.whole++; }
+      m.set(w.block, s);
+    }
+    const out = new Map();
+    m.forEach((s, id) => { if (s.edited) out.set(id, s.whole === s.n ? whole : 'chg'); });
+    return out;
+  };
+  const sa = blockState(A, 'del'), sb = blockState(B, 'add');
+  const spread = (from, fromState, to, toState, map) => {
+    from.words.forEach((w, i) => {
+      if (fromState.get(w.block) === 'chg' && map[i] >= 0){
+        const tb = to.words[map[i]].block;
+        if (!toState.has(tb)) toState.set(tb, 'chg');
       }
+    });
+  };
+  spread(A, sa, B, sb, eqMap.a);
+  spread(B, sb, A, sa, eqMap.b);
+  return { a: sa, b: sb };
+}
+
+/* ---------------- rendering ---------------- */
+
+const panes = { a:null, b:null };
+
+function mountPane(key){
+  const doc = state[key];
+  const scroller = $('scroll' + key.toUpperCase());
+  if (panes[key] && panes[key].observer) panes[key].observer.disconnect();
+  scroller.innerHTML = '';
+  scroller.scrollTop = 0;
+  const pane = { key, doc, scroller, tops:null, pageEls:[], layers:[], hunkEls:new Map() };
+  panes[key] = pane;
+
+  if (doc.kind === 'pdf'){
+    doc.pages.forEach((pg, i) => {
+      const el = document.createElement('div');
+      el.className = 'pdf-page';
+      el.style.aspectRatio = pg.W + ' / ' + pg.H;
+      const layer = document.createElement('div');
+      layer.className = 'hl-layer';
+      const num = document.createElement('span');
+      num.className = 'pnum';
+      num.textContent = (i+1) + ' / ' + doc.pages.length;
+      el.append(layer, num);
+      el.dataset.idx = i;
+      scroller.appendChild(el);
+      pane.pageEls.push(el);
+      pane.layers.push(layer);
+    });
+    pane.observer = new IntersectionObserver(entries => {
+      entries.forEach(en => { if (en.isIntersecting) renderPdfPage(pane, +en.target.dataset.idx); });
+    }, { root: scroller, rootMargin: '1200px 0px' });
+    pane.pageEls.forEach(el => pane.observer.observe(el));
+  } else {
+    scroller.appendChild(doc.holder);
+    fitDom(pane);
+  }
+}
+
+function renderPdfPage(pane, i){
+  const el = pane.pageEls[i];
+  if (el.dataset.rendered) return el.renderPromise;
+  el.dataset.rendered = '1';
+  const pg = pane.doc.pages[i];
+  const dpr = Math.min(window.devicePixelRatio || 1, 2);
+  const scale = Math.max(1, (el.clientWidth / pg.W) * dpr);
+  const vp = pg.page.getViewport({ scale });
+  const canvas = document.createElement('canvas');
+  canvas.width = Math.floor(vp.width); canvas.height = Math.floor(vp.height);
+  el.insertBefore(canvas, el.firstChild);
+  el.renderPromise = pg.page.render({ canvasContext: canvas.getContext('2d'), viewport: vp }).promise.catch(err => console.error(err));
+  return el.renderPromise;
+}
+
+// Shrink a rendered Word/text document to fit its pane, like a PDF viewer's "fit width".
+function fitDom(pane){
+  const holder = pane.doc.holder;
+  holder.style.zoom = 1;
+  const page = holder.querySelector('section, .txt-page');
+  if (!page) return;
+  const avail = pane.scroller.clientWidth - 36;
+  const z = Math.min(1, avail / page.offsetWidth);
+  holder.style.zoom = z;
+}
+
+function clearHighlights(pane){
+  if (pane.doc.kind === 'pdf'){
+    pane.layers.forEach(l => l.innerHTML = '');
+  } else {
+    pane.doc.words.forEach(w => w.els.forEach(e => e.classList.remove('add','del','chg','cur')));
+    pane.doc.holder.querySelectorAll('.pb-add,.pb-del,.pb-chg').forEach(e => e.classList.remove('pb-add','pb-del','pb-chg'));
+  }
+  pane.hunkEls = new Map();
+}
+
+function addHunkEl(pane, hunk, el){
+  if (hunk < 0) return;
+  if (!pane.hunkEls.has(hunk)) pane.hunkEls.set(hunk, []);
+  pane.hunkEls.get(hunk).push(el);
+}
+
+function pdfRect(pane, page, x, y, w, h, cls){
+  const d = document.createElement('div');
+  d.className = cls;
+  const padX = 0.0025, padY = 0.001;
+  d.style.left = ((x - padX) * 100) + '%';
+  d.style.top = ((y - padY) * 100) + '%';
+  d.style.width = ((w + padX*2) * 100) + '%';
+  d.style.height = ((h + padY*2) * 100) + '%';
+  pane.layers[page].appendChild(d);
+  return d;
+}
+
+function applyHighlights(pane, blockStates){
+  clearHighlights(pane);
+  const words = pane.doc.words;
+
+  if (pane.doc.kind === 'pdf'){
+    if (gran === 'word'){
+      // merge neighbouring marked words on the same line into one continuous highlight
+      let run = null;
+      const flush = () => {
+        if (!run) return;
+        const d = pdfRect(pane, run.page, run.x0, run.y0, run.x1 - run.x0, run.y1 - run.y0, run.state);
+        addHunkEl(pane, run.hunk, d);
+        run = null;
+      };
+      words.forEach(w => {
+        if (!w.state){ flush(); return; }
+        if (run && (run.line !== w.line || run.hunk !== w.hunk)) flush();
+        if (!run) run = { page:w.page, line:w.line, hunk:w.hunk, state:w.state, x0:w.x, x1:w.x+w.w, y0:w.y, y1:w.y+w.h };
+        else { run.x1 = Math.max(run.x1, w.x+w.w); run.y0 = Math.min(run.y0, w.y); run.y1 = Math.max(run.y1, w.y+w.h); }
+      });
+      flush();
+    } else {
+      const lines = new Map();
+      words.forEach(w => {
+        const st = blockStates.get(w.block);
+        if (!st) return;
+        const L = lines.get(w.line);
+        if (!L) lines.set(w.line, { page:w.page, st, hunk:w.hunk, x0:w.x, x1:w.x+w.w, y0:w.y, y1:w.y+w.h });
+        else { L.x0 = Math.min(L.x0, w.x); L.x1 = Math.max(L.x1, w.x+w.w); L.y0 = Math.min(L.y0, w.y); L.y1 = Math.max(L.y1, w.y+w.h); if (L.hunk < 0) L.hunk = w.hunk; }
+      });
+      lines.forEach(L => addHunkEl(pane, L.hunk, pdfRect(pane, L.page, L.x0, L.y0, L.x1 - L.x0, L.y1 - L.y0, L.st)));
+    }
+  } else {
+    if (gran === 'word'){
+      words.forEach(w => {
+        if (!w.state) return;
+        w.els.forEach(e => { e.classList.add(w.state); addHunkEl(pane, w.hunk, e); });
+      });
+      // fill the space between two marked words of the same edit so it reads as one phrase
+      words.forEach((w, i) => {
+        const n = words[i+1];
+        if (w.state && n && n.hunk === w.hunk && n.blockEl === w.blockEl){
+          const last = w.els[w.els.length-1];
+          const gap = last.nextSibling;
+          if (gap && gap.nodeType === 3 && /^\s+$/.test(gap.nodeValue)){
+            const s = document.createElement('span');
+            s.className = 'cw ' + w.state;
+            gap.parentNode.replaceChild(s, gap);
+            s.appendChild(gap);
+            w.els.push(s);
+          }
+        }
+      });
+    } else {
+      const done = new Set();
+      words.forEach(w => {
+        const st = blockStates.get(w.block);
+        if (!st || done.has(w.blockEl)) return;
+        done.add(w.blockEl);
+        w.blockEl.classList.add('pb-' + st);
+        addHunkEl(pane, w.hunk, w.blockEl);
+      });
+    }
+  }
+  pane.tops = null;
+}
+
+/* ---------------- positions, scroll sync, navigation ---------------- */
+
+function wordTop(pane, i){
+  const words = pane.doc.words;
+  if (!words.length) return 0;
+  i = Math.max(0, Math.min(i, words.length - 1));
+  if (pane.doc.kind === 'pdf'){
+    const w = words[i];
+    const el = pane.pageEls[w.page];
+    return el.offsetTop + w.y * el.offsetHeight;
+  }
+  if (!pane.tops){
+    const base = pane.scroller.getBoundingClientRect().top - pane.scroller.scrollTop;
+    pane.tops = words.map(w => w.els[0].getBoundingClientRect().top - base);
+  }
+  return pane.tops[i];
+}
+
+function firstWordAt(pane, y){
+  let lo = 0, hi = pane.doc.words.length - 1;
+  while (lo < hi){
+    const mid = (lo + hi) >> 1;
+    if (wordTop(pane, mid) < y) lo = mid + 1; else hi = mid;
+  }
+  return lo;
+}
+
+const ignoreUntil = { a:0, b:0 };
+let rafPending = false;
+
+function onScroll(key){
+  if (performance.now() < ignoreUntil[key]) return;
+  if (!$('syncChk').checked || rafPending) return;
+  rafPending = true;
+  requestAnimationFrame(() => {
+    rafPending = false;
+    const src = panes[key], other = panes[key === 'a' ? 'b' : 'a'];
+    if (!src || !other || !src.doc.words.length || !other.doc.words.length) return;
+    const map = eqMap[key];
+    const probe = src.scroller.scrollTop + 60;
+    let i = firstWordAt(src, probe);
+    let j = -1;
+    for (let k = i; k < Math.min(map.length, i + 600); k++){ if (map[k] >= 0){ i = k; j = map[k]; break; } }
+    if (j < 0){ for (let k = i; k >= Math.max(0, i - 600); k--){ if (map[k] >= 0){ i = k; j = map[k]; break; } } }
+    if (j < 0) return;
+    const offset = wordTop(src, i) - src.scroller.scrollTop;
+    const target = Math.max(0, wordTop(other, j) - offset);
+    if (Math.abs(other.scroller.scrollTop - target) > 1){
+      ignoreUntil[other.key] = performance.now() + 120;
+      other.scroller.scrollTop = target;
     }
   });
-
-  return frag;
 }
 
-function appendPara(col, text, cls){
-  const p = document.createElement('p');
-  p.className = 'para' + (cls ? ' ' + cls : '');
-  p.textContent = text;
-  col.appendChild(p);
+function goToHunk(n){
+  if (!hunks.length) return;
+  n = (n + hunks.length) % hunks.length;
+  ['a','b'].forEach(k => {
+    const p = panes[k];
+    (p.hunkEls.get(curHunk) || []).forEach(e => e.classList.remove('cur'));
+  });
+  curHunk = n;
+  const hk = hunks[n];
+  ['a','b'].forEach(k => {
+    const p = panes[k];
+    (p.hunkEls.get(n) || []).forEach(e => e.classList.add('cur'));
+    const idx = hk[k].length ? hk[k][0] : (k === 'a' ? hk.ia : hk.ib);
+    ignoreUntil[k] = performance.now() + 700;
+    p.scroller.scrollTo({ top: Math.max(0, wordTop(p, idx) - 140), behavior: 'smooth' });
+  });
+  $('navPos').textContent = `${n+1} of ${hunks.length}`;
 }
 
-function appendSpacer(col){
-  const p = document.createElement('p');
-  p.className = 'para spacer';
-  p.textContent = '\u00A0';
-  col.appendChild(p);
+/* ---------------- compare flow ---------------- */
+
+function runCompare(){
+  setStatus('');
+  $('results').style.display = 'block';
+  $('fnA').textContent = state.a.name;
+  $('fnB').textContent = state.b.name;
+  mountPane('a');
+  mountPane('b');
+  computeDiff(state.a, state.b);
+  refreshHighlights();
+  curHunk = -1;
+  $('navPos').textContent = hunks.length ? `${hunks.length} change${hunks.length === 1 ? '' : 's'}` : 'No changes';
+  $('prevBtn').disabled = $('nextBtn').disabled = !hunks.length;
+  renderStats();
+  $('results').scrollIntoView({ behavior:'smooth', block:'start' });
 }
+
+function refreshHighlights(){
+  const bs = computeBlockStates(state.a, state.b);
+  applyHighlights(panes.a, bs.a);
+  applyHighlights(panes.b, bs.b);
+  if (curHunk >= 0) ['a','b'].forEach(k => (panes[k].hunkEls.get(curHunk) || []).forEach(e => e.classList.add('cur')));
+}
+
+function computeStats(){
+  const removed = state.a.words.filter(w => w.state).length;
+  const added = state.b.words.filter(w => w.state).length;
+  const pct = Math.round(((added + removed) / Math.max(state.a.words.length, 1)) * 100);
+  return { added, removed, pct, edits: hunks.length };
+}
+
+function renderStats(){
+  const s = computeStats();
+  $('statsBar').innerHTML = `
+    <span><b>${s.edits}</b> edit${s.edits === 1 ? '' : 's'}</span>
+    <span class="add"><b>+${s.added.toLocaleString()}</b> words in revised</span>
+    <span class="del"><b>&minus;${s.removed.toLocaleString()}</b> words from original</span>
+    <span><b>${s.pct}%</b> of Draft A touched</span>`;
+}
+
+setupSlot('a');
+setupSlot('b');
+
+$('compareBtn').addEventListener('click', runCompare);
+$('granToggle').addEventListener('click', e => {
+  const btn = e.target.closest('button');
+  if (!btn) return;
+  [...$('granToggle').children].forEach(b => b.classList.toggle('active', b === btn));
+  gran = btn.dataset.val;
+  refreshHighlights();
+});
+$('prevBtn').addEventListener('click', () => goToHunk(curHunk < 0 ? hunks.length - 1 : curHunk - 1));
+$('nextBtn').addEventListener('click', () => goToHunk(curHunk + 1));
+$('scrollA').addEventListener('scroll', () => onScroll('a'), { passive:true });
+$('scrollB').addEventListener('scroll', () => onScroll('b'), { passive:true });
+
+const ro = new ResizeObserver(() => {
+  ['a','b'].forEach(k => { const p = panes[k]; if (!p) return; if (p.doc.kind === 'dom') fitDom(p); p.tops = null; });
+});
+ro.observe($('scrollA'));
+if (document.fonts) document.fonts.ready.then(() => ['a','b'].forEach(k => { if (panes[k]) panes[k].tops = null; }));
+
+$('printBtn').addEventListener('click', async () => {
+  const jobs = [];
+  ['a','b'].forEach(k => { const p = panes[k]; if (p && p.doc.kind === 'pdf') p.pageEls.forEach((_, i) => jobs.push(renderPdfPage(p, i))); });
+  await Promise.all(jobs);
+  window.print();
+});
+
+$('copyBtn').addEventListener('click', () => {
+  const s = computeStats();
+  const text = `Ch-Changes comparison\nDraft A: ${state.a.name} (${state.a.words.length} words)\nDraft B: ${state.b.name} (${state.b.words.length} words)\n${s.edits} edits | +${s.added} words in revised | -${s.removed} words from original | ${s.pct}% touched`;
+  navigator.clipboard.writeText(text).then(() => {
+    const b = $('copyBtn'), o = b.textContent;
+    b.textContent = 'Copied'; setTimeout(() => b.textContent = o, 1500);
+  });
+});
 </script>
 </body>
 </html>

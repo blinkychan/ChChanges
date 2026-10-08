@@ -10,6 +10,7 @@
 <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/docx-preview@0.3.7/dist/docx-preview.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/pdf-lib/1.17.1/pdf-lib.min.js"></script>
 <style>
   :root{
     --paper:#F6F3EC;
@@ -192,6 +193,7 @@
   }
 
   @media print{
+    *{-webkit-print-color-adjust:exact;print-color-adjust:exact;}
     body{padding:0;background:#fff;}
     .upload-row,.cta-row,.status-line,.toolbar,.actions-row,header.top,footer.note{display:none !important;}
     .viewer{box-shadow:none;border:none;background:#fff;}
@@ -266,7 +268,7 @@
       </div>
     </div>
     <div class="actions-row">
-      <button id="printBtn">Print / Save PDF</button>
+      <button id="dlBtn">Download PDF</button>
       <button id="copyBtn">Copy summary</button>
     </div>
   </div>
@@ -348,7 +350,9 @@ async function loadDoc(file, key){
 // PDF: rebuild real words from glyph positions. Some PDFs (Final Draft, many exports)
 // place every letter separately with no space characters, so words must be found by gaps.
 async function loadPdf(file){
-  const pdf = await pdfjsLib.getDocument({ data: await file.arrayBuffer() }).promise;
+  const buf = await file.arrayBuffer();
+  const bytes = new Uint8Array(buf.slice(0));
+  const pdf = await pdfjsLib.getDocument({ data: buf }).promise;
   const words = [], pages = [];
   let lineId = 0, blockId = 0;
 
@@ -415,7 +419,7 @@ async function loadPdf(file){
       prevLine = line;
     }
   }
-  return { kind:'pdf', name:file.name, pdf, pages, words };
+  return { kind:'pdf', name:file.name, pdf, pages, words, bytes };
 }
 
 async function loadDocx(file, key){
@@ -770,40 +774,47 @@ function pdfRect(side, page, x, y, w, h, cls){
   if (!layer) return;
   const d = document.createElement('div');
   d.className = cls;
-  const padX = 0.0025, padY = 0.001;
-  d.style.left = ((x - padX) * 100) + '%';
-  d.style.top = ((y - padY) * 100) + '%';
-  d.style.width = ((w + padX*2) * 100) + '%';
-  d.style.height = ((h + padY*2) * 100) + '%';
+  d.style.left = (x * 100) + '%';
+  d.style.top = (y * 100) + '%';
+  d.style.width = (w * 100) + '%';
+  d.style.height = (h * 100) + '%';
   layer.appendChild(d);
+}
+
+// Highlight boxes for a PDF side, as fractions of the page.
+function pdfMarks(side, blockStates){
+  const words = side.doc.words, marks = [];
+  if (gran === 'word'){
+    // one continuous mark per edit per line, instead of a box per word
+    let run = null;
+    const flush = () => { if (run){ marks.push({ page:run.page, x:run.x0, y:run.y0, w:run.x1 - run.x0, h:run.y1 - run.y0, state:run.state }); run = null; } };
+    words.forEach(w => {
+      if (!w.state){ flush(); return; }
+      if (run && (run.line !== w.line || run.hunk !== w.hunk)) flush();
+      if (!run) run = { page:w.page, line:w.line, hunk:w.hunk, state:w.state, x0:w.x, x1:w.x+w.w, y0:w.y, y1:w.y+w.h };
+      else { run.x1 = Math.max(run.x1, w.x+w.w); run.y0 = Math.min(run.y0, w.y); run.y1 = Math.max(run.y1, w.y+w.h); }
+    });
+    flush();
+  } else {
+    const lines = new Map();
+    words.forEach(w => {
+      const st = blockStates.get(w.block);
+      if (!st) return;
+      const L = lines.get(w.line);
+      if (!L) lines.set(w.line, { page:w.page, st, x0:w.x, x1:w.x+w.w, y0:w.y, y1:w.y+w.h });
+      else { L.x0 = Math.min(L.x0, w.x); L.x1 = Math.max(L.x1, w.x+w.w); L.y0 = Math.min(L.y0, w.y); L.y1 = Math.max(L.y1, w.y+w.h); }
+    });
+    lines.forEach(L => marks.push({ page:L.page, x:L.x0, y:L.y0, w:L.x1 - L.x0, h:L.y1 - L.y0, state:L.st }));
+  }
+  const padX = 0.0025, padY = 0.001;
+  return marks.map(m => ({ ...m, x: m.x - padX, y: m.y - padY, w: m.w + padX*2, h: m.h + padY*2 }));
 }
 
 function applyHighlights(side, blockStates){
   clearHighlights(side);
   const words = side.doc.words;
   if (side.doc.kind === 'pdf'){
-    if (gran === 'word'){
-      // one continuous mark per edit per line, instead of a box per word
-      let run = null;
-      const flush = () => { if (run){ pdfRect(side, run.page, run.x0, run.y0, run.x1 - run.x0, run.y1 - run.y0, run.state); run = null; } };
-      words.forEach(w => {
-        if (!w.state){ flush(); return; }
-        if (run && (run.line !== w.line || run.hunk !== w.hunk)) flush();
-        if (!run) run = { page:w.page, line:w.line, hunk:w.hunk, state:w.state, x0:w.x, x1:w.x+w.w, y0:w.y, y1:w.y+w.h };
-        else { run.x1 = Math.max(run.x1, w.x+w.w); run.y0 = Math.min(run.y0, w.y); run.y1 = Math.max(run.y1, w.y+w.h); }
-      });
-      flush();
-    } else {
-      const lines = new Map();
-      words.forEach(w => {
-        const st = blockStates.get(w.block);
-        if (!st) return;
-        const L = lines.get(w.line);
-        if (!L) lines.set(w.line, { page:w.page, st, x0:w.x, x1:w.x+w.w, y0:w.y, y1:w.y+w.h });
-        else { L.x0 = Math.min(L.x0, w.x); L.x1 = Math.max(L.x1, w.x+w.w); L.y0 = Math.min(L.y0, w.y); L.y1 = Math.max(L.y1, w.y+w.h); }
-      });
-      lines.forEach(L => pdfRect(side, L.page, L.x0, L.y0, L.x1 - L.x0, L.y1 - L.y0, L.st));
-    }
+    pdfMarks(side, blockStates).forEach(m => pdfRect(side, m.page, m.x, m.y, m.w, m.h, m.state));
   } else if (gran === 'word'){
     words.forEach(w => { if (w.state) w.els.forEach(e => e.classList.add(w.state)); });
     // fill the space between marked words of the same edit so it reads as one phrase
@@ -866,6 +877,271 @@ function updateMinimapView(){
   const at = (readingPoint() / track.len) * h;
   v.style.height = span + 'px';
   v.style.top = Math.min(h - span, Math.max(0, at - span * (sc.scrollTop / Math.max(1, sc.scrollHeight - sc.clientHeight)))) + 'px';
+}
+
+/* ---------------- PDF export ---------------- */
+// Builds a real PDF: one landscape spread per matched pair of pages, highlights drawn in.
+// PDF drafts are embedded as-is (crisp, selectable text); Word/text drafts are redrawn from their on-screen layout.
+
+const HL_RGB = { add:[0.737,0.824,0.969], del:[0.965,0.722,0.776], chg:[0.973,0.867,0.525] };
+
+// One entry per page for a side: { w, h (points), marks:[{x,y,w,h,state} as page fractions], words:[...] }
+function exportPagesFor(side, blockStates){
+  const doc = side.doc;
+  if (doc.kind === 'pdf'){
+    const pages = doc.pages.map(pg => ({ w: pg.W, h: pg.H, marks: [], src: pg }));
+    pdfMarks(side, blockStates).forEach(m => pages[m.page].marks.push(m));
+    return { pages, wordPage: doc.words.map(w => w.page) };
+  }
+  // Word/text: measure the rendered layout, then flow its lines onto letter-size pages with real margins
+  const zoom = side.zoom || 1;
+  const sections = [...doc.holder.querySelectorAll('section, .txt-page')].map(sec => {
+    const r = sec.getBoundingClientRect(), cs = getComputedStyle(sec);
+    const minPad = r.width / 8.5;
+    return { r, pageH: r.width * 11 / 8.5,
+      padTop: Math.max(parseFloat(cs.paddingTop) * zoom, minPad * 0.75),
+      padBottom: Math.max(parseFloat(cs.paddingBottom) * zoom, minPad * 0.75),
+      items: [], breaks: [], first: 0 };
+  });
+  const sectionOf = rect => {
+    const cy = rect.top + Math.min(rect.height, 4);
+    const i = sections.findIndex(s => cy >= s.r.top - 2 && cy <= s.r.bottom + 2);
+    return sections[i < 0 ? sections.length - 1 : i];
+  };
+  const styleCache = new Map();
+  const styleOf = el => {
+    const p = el.parentElement;
+    if (!styleCache.has(p)){
+      const cs = getComputedStyle(el);
+      const first = cs.fontFamily.split(',')[0].toLowerCase();
+      styleCache.set(p, { size: parseFloat(cs.fontSize), mono: /courier|mono/.test(first),
+        sans: /arial|helvetica|calibri|verdana|segoe|aptos|sans/.test(first),
+        bold: parseInt(cs.fontWeight, 10) >= 600, italic: cs.fontStyle === 'italic' });
+    }
+    return styleCache.get(p);
+  };
+
+  // 1. collect words and highlight boxes in section coordinates
+  const texts = [], marks = [];
+  doc.words.forEach((w, wi) => {
+    w.els.forEach((el, ei) => {
+      const txt = el.textContent;
+      if (!txt.trim()) return;
+      const rect = el.getBoundingClientRect();
+      if (!rect.width) return;
+      const sec = sectionOf(rect);
+      const it = { sec, wi, first: ei === 0, t: txt, x: rect.left - sec.r.left, top: rect.top - sec.r.top, w: rect.width, h: rect.height,
+                   sizePx: styleOf(el).size * zoom, st: styleOf(el) };
+      texts.push(it); sec.items.push(it);
+    });
+  });
+  doc.holder.querySelectorAll('.cw.add,.cw.del,.cw.chg,.pb-add,.pb-del,.pb-chg').forEach(el => {
+    const state = ['add','del','chg'].find(s => el.classList.contains(s) || el.classList.contains('pb-' + s));
+    [...el.getClientRects()].forEach(rect => {
+      if (!rect.width || !rect.height) return;
+      const sec = sectionOf(rect);
+      marks.push({ sec, x: rect.left - sec.r.left, top: rect.top - sec.r.top, w: rect.width, h: rect.height, state });
+    });
+  });
+
+  // 2. paginate each section: start a new page when a line would run into the bottom margin
+  const pages = [];
+  sections.forEach(sec => {
+    sec.first = pages.length;
+    const avail = sec.pageH - sec.padTop - sec.padBottom;
+    const sorted = sec.items.slice().sort((p, q) => p.top - q.top);
+    let y0 = sorted.length ? Math.min(sorted[0].top, sec.padTop) : 0;
+    sec.breaks = [y0];
+    sorted.forEach(it => {
+      if (it.top + it.h - y0 > avail && it.top > y0 + 1){ y0 = it.top; sec.breaks.push(y0); }
+    });
+    sec.breaks.forEach(() => pages.push({ w: 612, h: 792, marks: [], texts: [] }));
+  });
+  const place = (sec, top) => {
+    let k = 0;
+    while (k + 1 < sec.breaks.length && sec.breaks[k+1] <= top + 1) k++;
+    return { page: sec.first + k, y: sec.padTop + (top - sec.breaks[k]) };
+  };
+
+  // 3. map everything onto its page (fractions of the page)
+  const wordPage = [];
+  texts.forEach(it => {
+    const sec = it.sec, at = place(sec, it.top), pxToPt = 612 / sec.r.width;
+    if (it.first) wordPage[it.wi] = at.page;
+    pages[at.page].texts.push({ t: it.t, x: it.x / sec.r.width, y: at.y / sec.pageH, w: it.w / sec.r.width, h: it.h / sec.pageH,
+                                sizePt: it.sizePx * pxToPt, st: it.st });
+  });
+  marks.forEach(m => {
+    const sec = m.sec, at = place(sec, m.top);
+    pages[at.page].marks.push({ x: m.x / sec.r.width, y: at.y / sec.pageH, w: m.w / sec.r.width, h: m.h / sec.pageH, state: m.state });
+  });
+  doc.words.forEach((_, i) => { if (wordPage[i] === undefined) wordPage[i] = i ? wordPage[i-1] : 0; });
+  return { pages, wordPage };
+}
+
+// Pair pages of the two drafts by shared text; unmatched pages get an empty slot opposite them.
+function pairPages(nA, nB, wpA, wpB){
+  const score = Array.from({ length:nA }, () => new Int32Array(nB));
+  eqMap.a.forEach((j, i) => { if (j >= 0 && wpA[i] != null && wpB[j] != null) score[wpA[i]][wpB[j]]++; });
+  const dp = Array.from({ length:nA+1 }, () => new Float64Array(nB+1));
+  for (let i = 1; i <= nA; i++) for (let j = 1; j <= nB; j++)
+    dp[i][j] = Math.max(dp[i-1][j], dp[i][j-1], dp[i-1][j-1] + score[i-1][j-1] + 0.01);
+  const pairs = [];
+  let i = nA, j = nB;
+  while (i > 0 || j > 0){
+    if (i > 0 && j > 0 && Math.abs(dp[i][j] - (dp[i-1][j-1] + score[i-1][j-1] + 0.01)) < 1e-6){ pairs.push([i-1, j-1]); i--; j--; }
+    else if (i > 0 && (j === 0 || dp[i][j] === dp[i-1][j])){ pairs.push([i-1, -1]); i--; }
+    else { pairs.push([-1, j-1]); j--; }
+  }
+  return pairs.reverse();
+}
+
+const WINANSI_EXTRA = new Set('€‚ƒ„…†‡ˆ‰Š‹ŒŽ‘’“”•–—˜™š›œžŸ');
+function pdfSafe(t){
+  let out = '';
+  for (const ch of t){
+    const c = ch.codePointAt(0);
+    out += (c >= 32 && c <= 126) || (c >= 160 && c <= 255) || WINANSI_EXTRA.has(ch) ? ch : (ch === ' ' ? ' ' : '?');
+  }
+  return out;
+}
+
+async function downloadPdf(){
+  const btn = $('dlBtn'), label = btn.textContent;
+  btn.disabled = true;
+  const progress = t => btn.textContent = t;
+  try{
+    progress('Building PDF…');
+    const { PDFDocument, StandardFonts, rgb, BlendMode, LineCapStyle } = PDFLib;
+    const out = await PDFDocument.create();
+    out.setTitle(`Ch-Changes: ${state.a.name} vs ${state.b.name}`);
+    out.setCreator('Ch-Changes');
+    const F = {
+      ui: await out.embedFont(StandardFonts.Helvetica), uiBold: await out.embedFont(StandardFonts.HelveticaBold),
+      serif: await out.embedFont(StandardFonts.TimesRoman), serifB: await out.embedFont(StandardFonts.TimesRomanBold),
+      serifI: await out.embedFont(StandardFonts.TimesRomanItalic), serifBI: await out.embedFont(StandardFonts.TimesRomanBoldItalic),
+      sans: await out.embedFont(StandardFonts.Helvetica), sansB: await out.embedFont(StandardFonts.HelveticaBold),
+      sansI: await out.embedFont(StandardFonts.HelveticaOblique), sansBI: await out.embedFont(StandardFonts.HelveticaBoldOblique),
+      mono: await out.embedFont(StandardFonts.Courier), monoB: await out.embedFont(StandardFonts.CourierBold),
+      monoI: await out.embedFont(StandardFonts.CourierOblique), monoBI: await out.embedFont(StandardFonts.CourierBoldOblique),
+    };
+    const fontFor = st => {
+      const fam = st.mono ? 'mono' : st.sans ? 'sans' : 'serif';
+      return F[fam + (st.bold && st.italic ? 'BI' : st.bold ? 'B' : st.italic ? 'I' : '')];
+    };
+
+    const bs = computeBlockStates(state.a, state.b);
+    const ex = { a: exportPagesFor(sides.a, bs.a), b: exportPagesFor(sides.b, bs.b) };
+
+    // embed original PDF pages as vector art; fall back to images if a file can't be embedded
+    for (const k of ['a','b']){
+      const doc = sides[k].doc;
+      if (doc.kind !== 'pdf') continue;
+      let embedded = null;
+      try{
+        const src = await PDFDocument.load(doc.bytes);
+        const srcPages = src.getPages();
+        if (srcPages.some(p => p.getRotation().angle % 360 !== 0)) throw new Error('rotated pages');
+        embedded = await out.embedPages(srcPages, srcPages.map(p => { const c = p.getCropBox(); return { left:c.x, bottom:c.y, right:c.x + c.width, top:c.y + c.height }; }));
+      } catch(e){ console.warn('Embedding failed, using images instead:', e.message); }
+      for (let i = 0; i < ex[k].pages.length; i++){
+        const pg = ex[k].pages[i];
+        if (embedded){ pg.embed = embedded[i]; continue; }
+        progress(`Drawing pages… ${i+1}/${ex[k].pages.length}`);
+        const vp = pg.src.page.getViewport({ scale: 2 });
+        const c = document.createElement('canvas');
+        c.width = Math.floor(vp.width); c.height = Math.floor(vp.height);
+        await pg.src.page.render({ canvasContext: c.getContext('2d'), viewport: vp }).promise;
+        const jpg = await new Promise(r => c.toBlob(b => b.arrayBuffer().then(r), 'image/jpeg', 0.9));
+        pg.image = await out.embedJpg(jpg);
+        c.width = c.height = 0;
+      }
+    }
+
+    const pairs = pairPages(ex.a.pages.length, ex.b.pages.length, ex.a.wordPage, ex.b.wordPage);
+    const stats = computeStats();
+    const M = 30, GUT = 30, HEAD = 46, FOOT = 26;
+    const slotW = Math.max(...ex.a.pages.map(p => p.w), ...ex.b.pages.map(p => p.w), 612);
+    const slotH = Math.max(...ex.a.pages.map(p => p.h), ...ex.b.pages.map(p => p.h), 792);
+    const PW = M*2 + slotW*2 + GUT, PH = HEAD + slotH + FOOT + M;
+    const ink = rgb(0.13,0.12,0.11), soft = rgb(0.42,0.39,0.33), pink = rgb(0.68,0.23,0.36), blue = rgb(0.18,0.31,0.56);
+    const fit = (txt, font, size, maxW) => {
+      txt = pdfSafe(txt);
+      if (font.widthOfTextAtSize(txt, size) <= maxW) return txt;
+      while (txt.length > 4 && font.widthOfTextAtSize(txt + '…', size) > maxW) txt = txt.slice(0, -1);
+      return txt + '…';
+    };
+
+    pairs.forEach(([ia, ib], n) => {
+      const page = out.addPage([PW, PH]);
+      // header: labels, file names, legend
+      const top = PH - M + 4;
+      [[M, 'DRAFT A · ORIGINAL', state.a.name, pink, ia], [M + slotW + GUT, 'DRAFT B · REVISED', state.b.name, blue, ib]].forEach(([x, lbl, fn, col, idx]) => {
+        page.drawText(pdfSafe(lbl), { x, y: top - 12, size: 9, font: F.uiBold, color: col });
+        const pn = idx >= 0 ? `p. ${idx+1}` : '';
+        page.drawText(fit(fn, F.ui, 9, slotW - 170), { x: x + 118, y: top - 12, size: 9, font: F.ui, color: soft });
+        if (pn) page.drawText(pn, { x: x + slotW - F.ui.widthOfTextAtSize(pn, 9), y: top - 12, size: 9, font: F.ui, color: soft });
+      });
+
+      [[ia, ex.a, M, 'del'], [ib, ex.b, M + slotW + GUT, 'add']].forEach(([idx, side, x0, missingKind]) => {
+        const yTop = PH - HEAD;
+        if (idx < 0){
+          const h = 90, y = yTop - h;
+          page.drawRectangle({ x: x0, y, width: slotW, height: h, borderColor: rgb(0.78,0.75,0.66), borderWidth: 1, borderDashArray:[4,3] });
+          const msg = missingKind === 'add' ? 'PAGE CUT — no match in the revision' : 'NEW PAGE — nothing in the original matches';
+          page.drawText(msg, { x: x0 + 16, y: y + h/2 - 4, size: 10, font: F.uiBold, color: missingKind === 'add' ? pink : blue });
+          return;
+        }
+        const pg = side.pages[idx];
+        const s = Math.min(slotW / pg.w, slotH / pg.h);
+        const W = pg.w * s, H = pg.h * s, x = x0 + (slotW - W) / 2, y = yTop - H;
+        page.drawRectangle({ x, y, width: W, height: H, color: rgb(1,1,1), borderColor: rgb(0.85,0.83,0.78), borderWidth: 0.6 });
+        if (pg.embed) page.drawPage(pg.embed, { x, y, width: W, height: H });
+        else if (pg.image) page.drawImage(pg.image, { x, y, width: W, height: H });
+        else (pg.texts || []).forEach(t => {
+          const font = fontFor(t.st);
+          let size = t.sizePt * s;
+          const txt = pdfSafe(t.t);
+          const want = t.w * W, got = font.widthOfTextAtSize(txt, size);
+          if (got > want * 1.04 && got > 0) size *= (want * 1.04) / got;
+          page.drawText(txt, { x: x + t.x * W, y: y + H - (t.y * H) - t.sizePt * s * 0.9, size, font, color: rgb(0,0,0) });
+        });
+        pg.marks.forEach(m => {
+          const c = HL_RGB[m.state];
+          page.drawRectangle({ x: x + m.x * W, y: y + H - (m.y + m.h) * H, width: m.w * W, height: m.h * H,
+            color: rgb(c[0], c[1], c[2]), blendMode: BlendMode.Multiply });
+        });
+      });
+
+      // footer: legend + summary + spread number
+      let lx = M, fy = M - 10;
+      [['Added','add'],['Removed','del'],['Changed','chg']].forEach(([t, k]) => {
+        const c = HL_RGB[k];
+        page.drawRectangle({ x: lx, y: fy - 1, width: 9, height: 9, color: rgb(c[0], c[1], c[2]) });
+        page.drawText(t, { x: lx + 13, y: fy, size: 8.5, font: F.ui, color: soft });
+        lx += 13 + F.ui.widthOfTextAtSize(t, 8.5) + 16;
+      });
+      const sum = `${stats.edits} edits · +${stats.added} words in · -${stats.removed} words out`;
+      page.drawText(sum, { x: lx + 8, y: fy, size: 8.5, font: F.ui, color: soft });
+      const tag = `Ch-Changes · ${n+1} / ${pairs.length}`;
+      page.drawText(tag, { x: PW - M - F.ui.widthOfTextAtSize(tag, 8.5), y: fy, size: 8.5, font: F.ui, color: soft });
+    });
+
+    progress('Saving…');
+    const bytes = await out.save();
+    const strip = n => n.replace(/\.[^.]+$/, '');
+    const a = document.createElement('a');
+    a.href = URL.createObjectURL(new Blob([bytes], { type:'application/pdf' }));
+    a.download = `Ch-Changes - ${strip(state.a.name)} vs ${strip(state.b.name)}.pdf`;
+    document.body.appendChild(a); a.click(); a.remove();
+    setTimeout(() => URL.revokeObjectURL(a.href), 30000);
+  } catch(err){
+    console.error(err);
+    setStatus('Couldn\'t build the PDF: ' + (err.message || err), true);
+  } finally {
+    btn.disabled = false;
+    btn.textContent = label;
+  }
 }
 
 /* ---------------- compare flow ---------------- */
@@ -945,12 +1221,7 @@ new ResizeObserver(entries => {
 }).observe($('scroller'));
 if (document.fonts) document.fonts.ready.then(() => { if (sides.a && $('results').style.display === 'block') relayout(); });
 
-$('printBtn').addEventListener('click', async () => {
-  const jobs = [];
-  [sides.a, sides.b].forEach(s => s && s.pageEls.forEach(el => el && jobs.push(drawPage(el))));
-  await Promise.all(jobs);
-  window.print();
-});
+$('dlBtn').addEventListener('click', downloadPdf);
 
 $('copyBtn').addEventListener('click', () => {
   const s = computeStats();

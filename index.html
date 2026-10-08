@@ -102,7 +102,7 @@
   /* results */
   #results{display:none;}
   .toolbar{
-    display:flex;flex-wrap:wrap;align-items:center;justify-content:space-between;gap:14px 20px;
+    display:flex;flex-wrap:wrap;align-items:center;justify-content:space-between;gap:12px 20px;
     padding:12px 16px;background:var(--paper-raised);border:1px solid var(--rule);border-radius:6px 6px 0 0;
   }
   .tgroup{display:flex;gap:8px;align-items:center;}
@@ -113,56 +113,58 @@
     font-weight:600;color:var(--ink-soft);cursor:pointer;
   }
   .toggle button.active{background:var(--ink);color:var(--paper);}
-  .nav{display:flex;align-items:center;gap:6px;}
-  .nav button{
-    border:1px solid var(--rule-strong);background:var(--paper);border-radius:5px;padding:6px 11px;
-    font-family:'Inter',sans-serif;font-size:12.5px;font-weight:600;color:var(--ink);cursor:pointer;
-  }
-  .nav button:disabled{opacity:.4;cursor:default;}
-  .nav .pos{font-size:12.5px;color:var(--ink-soft);min-width:86px;text-align:center;font-variant-numeric:tabular-nums;}
-  label.sync{display:flex;align-items:center;gap:6px;font-size:12.5px;font-weight:600;color:var(--ink-soft);cursor:pointer;}
+  .stats{display:flex;gap:18px;flex-wrap:wrap;font-size:13px;color:var(--ink-soft);}
+  .stats b{color:var(--ink);}
+  .stats .add b{color:var(--blue);}
+  .stats .del b{color:var(--pink);}
   .legend{display:flex;gap:14px;align-items:center;flex-wrap:wrap;}
   .legend span{display:flex;align-items:center;gap:6px;font-size:12px;color:var(--ink-soft);}
   .legend i{width:13px;height:13px;border-radius:2px;display:inline-block;}
 
-  .stats-bar{
-    display:flex;gap:22px;flex-wrap:wrap;padding:10px 16px;font-size:13px;color:var(--ink-soft);
-    border:1px solid var(--rule);border-top:none;background:var(--paper);
-  }
-  .stats-bar b{color:var(--ink);}
-  .stats-bar .add b{color:var(--blue);}
-  .stats-bar .del b{color:var(--pink);}
-
-  .viewer{
-    display:grid;grid-template-columns:1fr 1fr;gap:1px;background:var(--rule);
-    border:1px solid var(--rule);border-top:none;border-radius:0 0 6px 6px;overflow:hidden;box-shadow:var(--shadow);
-  }
-  @media (max-width:900px){.viewer{grid-template-columns:1fr;}}
-  .pane{background:var(--desk);display:flex;flex-direction:column;min-width:0;}
-  .pane-head{
-    display:flex;justify-content:space-between;align-items:baseline;gap:10px;padding:9px 16px;
+  .viewer{border:1px solid var(--rule);border-top:none;border-radius:0 0 6px 6px;overflow:hidden;box-shadow:var(--shadow);background:var(--desk);}
+  .viewer-head{
+    display:grid;grid-template-columns:1fr 1fr;gap:22px;padding:9px 40px 9px 22px;
     background:var(--paper-raised);border-bottom:1px solid var(--rule);
   }
-  .pane-head .lbl{font-family:'Courier Prime',monospace;font-size:11px;font-weight:700;letter-spacing:1.5px;text-transform:uppercase;}
-  .pane.a .lbl{color:var(--pink);}
-  .pane.b .lbl{color:var(--blue);}
-  .pane-head .fn{font-size:12px;color:var(--ink-soft);overflow:hidden;text-overflow:ellipsis;white-space:nowrap;}
-  .scroller{height:calc(100vh - 150px);min-height:480px;overflow:auto;padding:20px 18px 40px;position:relative;}
+  .viewer-head > div{display:flex;justify-content:space-between;align-items:baseline;gap:10px;min-width:0;}
+  .viewer-head .lbl{font-family:'Courier Prime',monospace;font-size:11px;font-weight:700;letter-spacing:1.5px;text-transform:uppercase;white-space:nowrap;}
+  .viewer-head .a .lbl{color:var(--pink);}
+  .viewer-head .b .lbl{color:var(--blue);}
+  .viewer-head .fn{font-size:12px;color:var(--ink-soft);overflow:hidden;text-overflow:ellipsis;white-space:nowrap;}
+  .viewer-body{display:flex;position:relative;}
+  .scroller{flex:1;height:calc(100vh - 140px);min-height:480px;overflow:auto;padding:20px 22px 40px;}
+  .row{display:grid;grid-template-columns:1fr 1fr;gap:22px;align-items:start;position:relative;}
+  .cell{min-width:0;position:relative;will-change:transform;}
+
+  /* change map */
+  .minimap{width:18px;flex:none;position:relative;background:var(--paper);border-left:1px solid var(--rule);cursor:pointer;}
+  .minimap .tick{position:absolute;left:3px;right:3px;height:3px;border-radius:1px;min-height:3px;}
+  .minimap .tick.add{background:var(--blue);}
+  .minimap .tick.del{background:var(--pink);}
+  .minimap .tick.chg{background:var(--gold);}
+  .minimap .view{position:absolute;left:0;right:0;border:1px solid var(--ink-soft);background:rgba(34,31,27,.06);pointer-events:none;}
 
   /* pages */
-  .pdf-page{position:relative;background:#fff;margin:0 auto 18px;box-shadow:0 1px 3px rgba(0,0,0,.12),0 4px 14px rgba(0,0,0,.08);}
+  .pdf-page{position:relative;background:#fff;width:100%;box-shadow:0 1px 3px rgba(0,0,0,.12),0 4px 14px rgba(0,0,0,.08);}
+  .pdf-page + .pdf-page{margin-top:22px;}
   .pdf-page canvas{position:absolute;inset:0;width:100%;height:100%;display:block;}
   .hl-layer{position:absolute;inset:0;pointer-events:none;}
   .hl-layer div{position:absolute;mix-blend-mode:multiply;border-radius:2px;}
   .hl-layer .add{background:var(--hl-add);}
   .hl-layer .del{background:var(--hl-del);}
   .hl-layer .chg{background:var(--hl-chg);}
-  .hl-layer .cur{box-shadow:0 0 0 2px var(--ink);}
-  .pnum{position:absolute;bottom:-16px;right:0;font-size:10px;color:var(--ink-soft);}
+  .pnum{position:absolute;top:6px;right:8px;font-size:10px;color:#9a9284;font-family:'Inter',sans-serif;}
+  .no-page{
+    border:1.5px dashed var(--rule-strong);border-radius:4px;padding:18px;text-align:center;
+    font-size:12.5px;color:var(--ink-soft);background:rgba(255,255,255,.35);
+  }
+  .no-page b{display:block;font-family:'Courier Prime',monospace;font-size:11px;letter-spacing:1.5px;text-transform:uppercase;margin-bottom:4px;}
+  .no-page.add b{color:var(--blue);}
+  .no-page.del b{color:var(--pink);}
 
   .dom-doc{transform-origin:top left;}
   .txt-page{
-    background:#fff;width:816px;min-height:1056px;margin:0 auto 18px;padding:96px;
+    background:#fff;width:816px;min-height:1056px;margin:0 auto;padding:96px;
     box-shadow:0 1px 3px rgba(0,0,0,.12),0 4px 14px rgba(0,0,0,.08);
     font-family:'Courier Prime',monospace;font-size:16px;line-height:1.25;color:#000;
   }
@@ -173,12 +175,9 @@
   .cw.add{background:var(--hl-add);}
   .cw.del{background:var(--hl-del);}
   .cw.chg{background:var(--hl-chg);}
-  .cw.cur{box-shadow:0 2px 0 var(--ink),0 -2px 0 var(--ink);}
   .pb-add{background:var(--hl-add) !important;}
   .pb-del{background:var(--hl-del) !important;}
   .pb-chg{background:var(--hl-chg) !important;}
-
-  .loading{font-size:13px;color:var(--ink-soft);text-align:center;padding:40px 0;}
 
   .actions-row{display:flex;justify-content:flex-end;gap:10px;margin-top:12px;}
   .actions-row button{
@@ -187,13 +186,19 @@
   }
   .actions-row button:hover{border-color:var(--ink-soft);color:var(--ink);}
   footer.note{text-align:center;font-size:12px;color:var(--ink-soft);margin-top:36px;}
+  @media (max-width:760px){
+    .scroller{padding:12px 10px 30px;}
+    .row,.viewer-head{gap:10px;}
+  }
 
   @media print{
     body{padding:0;background:#fff;}
     .upload-row,.cta-row,.status-line,.toolbar,.actions-row,header.top,footer.note{display:none !important;}
-    .viewer{box-shadow:none;border:none;}
+    .viewer{box-shadow:none;border:none;background:#fff;}
     .scroller{height:auto;overflow:visible;}
-    .pane{background:#fff;}
+    .minimap{display:none;}
+    .row{height:auto !important;}
+    .cell{transform:none !important;}
   }
 </style>
 </head>
@@ -243,27 +248,21 @@
           <button data-val="para">Paragraphs</button>
         </div>
       </div>
-      <div class="nav">
-        <button id="prevBtn" aria-label="Previous change">‹ Prev</button>
-        <span class="pos" id="navPos">—</span>
-        <button id="nextBtn" aria-label="Next change">Next ›</button>
-      </div>
-      <label class="sync"><input type="checkbox" id="syncChk" checked> Scroll together</label>
+      <div class="stats" id="stats"></div>
       <div class="legend">
         <span><i style="background:var(--hl-add)"></i>Added</span>
         <span><i style="background:var(--hl-del)"></i>Removed</span>
         <span><i style="background:var(--hl-chg)"></i>Changed</span>
       </div>
     </div>
-    <div class="stats-bar" id="statsBar"></div>
     <div class="viewer">
-      <div class="pane a">
-        <div class="pane-head"><span class="lbl">Draft A · Original</span><span class="fn" id="fnA"></span></div>
-        <div class="scroller" id="scrollA"></div>
+      <div class="viewer-head">
+        <div class="a"><span class="lbl">Draft A · Original</span><span class="fn" id="fnA"></span></div>
+        <div class="b"><span class="lbl">Draft B · Revised</span><span class="fn" id="fnB"></span></div>
       </div>
-      <div class="pane b">
-        <div class="pane-head"><span class="lbl">Draft B · Revised</span><span class="fn" id="fnB"></span></div>
-        <div class="scroller" id="scrollB"></div>
+      <div class="viewer-body">
+        <div class="scroller" id="scroller"><div id="grid"></div></div>
+        <div class="minimap" id="minimap" title="Every change in the draft. Click to jump."></div>
       </div>
     </div>
     <div class="actions-row">
@@ -282,7 +281,6 @@ const $ = id => document.getElementById(id);
 const state = { a:null, b:null };
 let gran = 'word';
 let hunks = [];
-let curHunk = -1;
 let eqMap = { a:[], b:[] };   // equal-word mapping: index in this doc -> index in the other doc (or -1)
 
 /* ---------------- upload ---------------- */
@@ -529,6 +527,34 @@ function computeDiff(A, B){
   });
   if (h) hunks.push(h);
 
+  // A pure insertion/cut can often slide a few words either way and still be correct
+  // (e.g. "…everything. INT." vs "INT. …everything."). Slide it to start a paragraph when possible.
+  hunks.forEach(hk => {
+    const one = hk.a.length ? 'a' : 'b';
+    if (hk.a.length && hk.b.length) return;
+    const doc = one === 'a' ? A : B, other = one === 'a' ? B : A;
+    const run = hk[one], map = eqMap[one], back = eqMap[one === 'a' ? 'b' : 'a'];
+    let s = run[0], e = run[run.length-1];
+    if (e - s + 1 !== run.length) return;
+    const W = doc.words, eq = (i, j) => i >= 0 && j < W.length && norm(W[i].t) === norm(W[j].t);
+    const startsPara = i => i === 0 || W[i].block !== W[i-1].block;
+    if (startsPara(s)) return;
+    let best = 0;
+    for (let k = 1; eq(s-k, e-k+1) && map[s-k] >= 0; k++) if (startsPara(s-k)){ best = -k; break; }
+    if (!best) for (let k = 1; eq(s+k-1, e+k) && map[e+k] >= 0; k++) if (startsPara(s+k)){ best = k; break; }
+    if (!best) return;
+    const steps = Math.abs(best), dir = Math.sign(best);
+    for (let q = 0; q < steps; q++){
+      // the word leaving the run takes over the match of the word entering it
+      const leave = dir < 0 ? e : s, enter = dir < 0 ? s - 1 : e + 1;
+      const partner = map[enter];
+      map[leave] = partner; back[partner] = leave; map[enter] = -1;
+      s += dir; e += dir;
+    }
+    hk[one] = range(s, e - s + 1);
+    if (one === 'a') hk.ia = s; else hk.ib = s;
+  });
+
   hunks.forEach((hk, id) => {
     hk.type = hk.a.length && hk.b.length ? 'chg' : hk.a.length ? 'del' : 'add';
     hk.a.forEach(i => { A.words[i].state = hk.type; A.words[i].hunk = id; });
@@ -567,86 +593,181 @@ function computeBlockStates(A, B){
 
 /* ---------------- rendering ---------------- */
 
-const panes = { a:null, b:null };
+const sides = { a:null, b:null };
+let pageObserver = null;
+let layoutTimer = null;
 
-function mountPane(key){
-  const doc = state[key];
-  const scroller = $('scroll' + key.toUpperCase());
-  if (panes[key] && panes[key].observer) panes[key].observer.disconnect();
-  scroller.innerHTML = '';
-  scroller.scrollTop = 0;
-  const pane = { key, doc, scroller, tops:null, pageEls:[], layers:[], hunkEls:new Map() };
-  panes[key] = pane;
-
-  if (doc.kind === 'pdf'){
-    doc.pages.forEach((pg, i) => {
-      const el = document.createElement('div');
-      el.className = 'pdf-page';
-      el.style.aspectRatio = pg.W + ' / ' + pg.H;
-      const layer = document.createElement('div');
-      layer.className = 'hl-layer';
-      const num = document.createElement('span');
-      num.className = 'pnum';
-      num.textContent = (i+1) + ' / ' + doc.pages.length;
-      el.append(layer, num);
-      el.dataset.idx = i;
-      scroller.appendChild(el);
-      pane.pageEls.push(el);
-      pane.layers.push(layer);
-    });
-    pane.observer = new IntersectionObserver(entries => {
-      entries.forEach(en => { if (en.isIntersecting) renderPdfPage(pane, +en.target.dataset.idx); });
-    }, { root: scroller, rootMargin: '1200px 0px' });
-    pane.pageEls.forEach(el => pane.observer.observe(el));
-  } else {
-    scroller.appendChild(doc.holder);
-    fitDom(pane);
-  }
+function makePdfPage(side, i){
+  const doc = side.doc, pg = doc.pages[i];
+  const el = document.createElement('div');
+  el.className = 'pdf-page';
+  el.style.aspectRatio = pg.W + ' / ' + pg.H;
+  const layer = document.createElement('div');
+  layer.className = 'hl-layer';
+  const num = document.createElement('span');
+  num.className = 'pnum';
+  num.textContent = (i+1) + '.';
+  el.append(layer, num);
+  el._side = side; el._idx = i;
+  side.pageEls[i] = el;
+  side.layers[i] = layer;
+  return el;
 }
 
-function renderPdfPage(pane, i){
-  const el = pane.pageEls[i];
-  if (el.dataset.rendered) return el.renderPromise;
-  el.dataset.rendered = '1';
-  const pg = pane.doc.pages[i];
+function buildView(){
+  const grid = $('grid');
+  grid.innerHTML = '';
+  $('scroller').scrollTop = 0;
+  if (pageObserver) pageObserver.disconnect();
+  ['a','b'].forEach(k => { sides[k] = { key:k, doc:state[k], pageEls:[], layers:[] }; });
+  track = null;
+  const A = sides.a, B = sides.b;
+
+  // two columns on one scroll; buildTrack() keeps matching text level as you scroll
+  const row = document.createElement('div');
+  row.className = 'row';
+  [A, B].forEach(side => {
+    const cell = document.createElement('div');
+    cell.className = 'cell';
+    if (side.doc.kind === 'pdf') side.doc.pages.forEach((_, i) => cell.appendChild(makePdfPage(side, i)));
+    else cell.appendChild(side.doc.holder);
+    side.cell = cell;
+    row.appendChild(cell);
+  });
+  grid.appendChild(row);
+
+  // draw pages only while they're near the screen; drop them when far away to save memory
+  pageObserver = new IntersectionObserver(entries => {
+    entries.forEach(en => en.isIntersecting ? drawPage(en.target) : releasePage(en.target));
+  }, { root: $('scroller'), rootMargin: '1500px 0px' });
+  [A, B].forEach(s => s.pageEls.forEach(el => pageObserver.observe(el)));
+}
+
+function drawPage(el){
+  if (el._canvas) return el._task ? el._task.promise : Promise.resolve();
+  const pg = el._side.doc.pages[el._idx];
   const dpr = Math.min(window.devicePixelRatio || 1, 2);
-  const scale = Math.max(1, (el.clientWidth / pg.W) * dpr);
+  const scale = Math.max(0.5, (el.clientWidth / pg.W) * dpr);
   const vp = pg.page.getViewport({ scale });
   const canvas = document.createElement('canvas');
   canvas.width = Math.floor(vp.width); canvas.height = Math.floor(vp.height);
   el.insertBefore(canvas, el.firstChild);
-  el.renderPromise = pg.page.render({ canvasContext: canvas.getContext('2d'), viewport: vp }).promise.catch(err => console.error(err));
-  return el.renderPromise;
+  el._canvas = canvas;
+  el._task = pg.page.render({ canvasContext: canvas.getContext('2d'), viewport: vp });
+  return el._task.promise.catch(err => { if (err && err.name !== 'RenderingCancelledException') console.error(err); });
 }
 
-// Shrink a rendered Word/text document to fit its pane, like a PDF viewer's "fit width".
-function fitDom(pane){
-  const holder = pane.doc.holder;
+function releasePage(el){
+  if (!el._canvas) return;
+  if (el._task){ try { el._task.cancel(); } catch(e){} }
+  el._canvas.width = el._canvas.height = 0;
+  el._canvas.remove();
+  el._canvas = null; el._task = null;
+}
+
+// Shrink a rendered Word/text document to fit its column, like "fit width" in a PDF viewer.
+function fitDom(side){
+  if (!side || side.doc.kind !== 'dom') return;
+  const holder = side.doc.holder;
   holder.style.zoom = 1;
   const page = holder.querySelector('section, .txt-page');
   if (!page) return;
-  const avail = pane.scroller.clientWidth - 36;
-  const z = Math.min(1, avail / page.offsetWidth);
+  const z = Math.min(1, side.cell.clientWidth / page.offsetWidth);
   holder.style.zoom = z;
+  side.zoom = z;
 }
 
-function clearHighlights(pane){
-  if (pane.doc.kind === 'pdf'){
-    pane.layers.forEach(l => l.innerHTML = '');
+// Scroll sync: one scrollbar drives both drafts. Matching lines ("anchors") are mapped onto a shared
+// track; as you scroll, each column moves at its own pace so the text being read stays level on
+// both sides. Where one draft has extra material, the other side simply waits.
+let track = null;
+
+function buildTrack(){
+  const A = sides.a, B = sides.b;
+  fitDom(A); fitDom(B);
+  [A, B].forEach(s => s.cell.style.transform = '');
+  const hA = A.cell.offsetHeight, hB = B.cell.offsetHeight;
+
+  const pageGeo = side => side.doc.kind === 'pdf'
+    ? side.pageEls.map(el => ({ top: el.offsetTop, h: el.offsetHeight })) : null;
+  const geo = { a: pageGeo(A), b: pageGeo(B) };
+  const baseOf = side => side.cell.getBoundingClientRect().top;
+  const topOf = (side, w, base) => {
+    if (side.doc.kind === 'dom') return w.blockEl.getBoundingClientRect().top - base;
+    const g = geo[side.key][w.page];
+    return g.top + w.y * g.h;
+  };
+  const keyOf = (side, w) => side.doc.kind === 'dom' ? w.blockEl : w.page * 100000 + w.line;
+
+  const baseA = baseOf(A), baseB = baseOf(B);
+  const TA = [0], TB = [0];
+  const seenA = new Set();
+  let lastKeyB = null;
+  eqMap.a.forEach((j, i) => {
+    if (j < 0) return;
+    const wa = A.doc.words[i], wb = B.doc.words[j];
+    const ka = keyOf(A, wa), kb = keyOf(B, wb);
+    if (seenA.has(ka) || kb === lastKeyB) return;
+    seenA.add(ka); lastKeyB = kb;
+    const ta = topOf(A, wa, baseA), tb = topOf(B, wb, baseB);
+    if (ta <= TA[TA.length-1] || tb <= TB[TB.length-1]) return; // keep both sides moving forward
+    TA.push(ta); TB.push(tb);
+  });
+  TA.push(Math.max(hA, TA[TA.length-1] + 1));
+  TB.push(Math.max(hB, TB[TB.length-1] + 1));
+
+  // shared track: each stretch is as long as the longer of the two sides
+  const V = [0];
+  for (let k = 1; k < TA.length; k++) V.push(V[k-1] + Math.max(TA[k] - TA[k-1], TB[k] - TB[k-1]));
+  track = { TA, TB, V, len: V[V.length-1] };
+  $('grid').firstChild.style.height = track.len + 'px';
+  syncColumns();
+}
+
+function lerpIdx(arr, x){
+  let lo = 0, hi = arr.length - 2;
+  while (lo < hi){ const mid = (lo + hi + 1) >> 1; if (arr[mid] <= x) lo = mid; else hi = mid - 1; }
+  return lo;
+}
+function trackToSide(v, T){
+  const { V } = track;
+  const k = lerpIdx(V, v);
+  const f = V[k+1] > V[k] ? (v - V[k]) / (V[k+1] - V[k]) : 0;
+  return T[k] + Math.min(1, Math.max(0, f)) * (T[k+1] - T[k]);
+}
+function sideToTrack(t, T){
+  const { V } = track;
+  const k = lerpIdx(T, t);
+  const f = T[k+1] > T[k] ? (t - T[k]) / (T[k+1] - T[k]) : 0;
+  return V[k] + Math.min(1, Math.max(0, f)) * (V[k+1] - V[k]);
+}
+// the reading line slides from the top of the screen (start) to the bottom (end)
+function readingPoint(){
+  const sc = $('scroller');
+  const maxS = sc.scrollHeight - sc.clientHeight;
+  return maxS > 0 ? (sc.scrollTop / maxS) * track.len : 0;
+}
+
+function syncColumns(){
+  if (!track) return;
+  const v = readingPoint();
+  sides.a.cell.style.transform = `translateY(${v - trackToSide(v, track.TA)}px)`;
+  sides.b.cell.style.transform = `translateY(${v - trackToSide(v, track.TB)}px)`;
+  updateMinimapView();
+}
+
+function clearHighlights(side){
+  if (side.doc.kind === 'pdf'){
+    side.layers.forEach(l => { if (l) l.innerHTML = ''; });
   } else {
-    pane.doc.words.forEach(w => w.els.forEach(e => e.classList.remove('add','del','chg','cur')));
-    pane.doc.holder.querySelectorAll('.pb-add,.pb-del,.pb-chg').forEach(e => e.classList.remove('pb-add','pb-del','pb-chg'));
+    side.doc.words.forEach(w => w.els.forEach(e => e.classList.remove('add','del','chg')));
+    side.doc.holder.querySelectorAll('.pb-add,.pb-del,.pb-chg').forEach(e => e.classList.remove('pb-add','pb-del','pb-chg'));
   }
-  pane.hunkEls = new Map();
 }
 
-function addHunkEl(pane, hunk, el){
-  if (hunk < 0) return;
-  if (!pane.hunkEls.has(hunk)) pane.hunkEls.set(hunk, []);
-  pane.hunkEls.get(hunk).push(el);
-}
-
-function pdfRect(pane, page, x, y, w, h, cls){
+function pdfRect(side, page, x, y, w, h, cls){
+  const layer = side.layers[page];
+  if (!layer) return;
   const d = document.createElement('div');
   d.className = cls;
   const padX = 0.0025, padY = 0.001;
@@ -654,24 +775,17 @@ function pdfRect(pane, page, x, y, w, h, cls){
   d.style.top = ((y - padY) * 100) + '%';
   d.style.width = ((w + padX*2) * 100) + '%';
   d.style.height = ((h + padY*2) * 100) + '%';
-  pane.layers[page].appendChild(d);
-  return d;
+  layer.appendChild(d);
 }
 
-function applyHighlights(pane, blockStates){
-  clearHighlights(pane);
-  const words = pane.doc.words;
-
-  if (pane.doc.kind === 'pdf'){
+function applyHighlights(side, blockStates){
+  clearHighlights(side);
+  const words = side.doc.words;
+  if (side.doc.kind === 'pdf'){
     if (gran === 'word'){
-      // merge neighbouring marked words on the same line into one continuous highlight
+      // one continuous mark per edit per line, instead of a box per word
       let run = null;
-      const flush = () => {
-        if (!run) return;
-        const d = pdfRect(pane, run.page, run.x0, run.y0, run.x1 - run.x0, run.y1 - run.y0, run.state);
-        addHunkEl(pane, run.hunk, d);
-        run = null;
-      };
+      const flush = () => { if (run){ pdfRect(side, run.page, run.x0, run.y0, run.x1 - run.x0, run.y1 - run.y0, run.state); run = null; } };
       words.forEach(w => {
         if (!w.state){ flush(); return; }
         if (run && (run.line !== w.line || run.hunk !== w.hunk)) flush();
@@ -685,142 +799,99 @@ function applyHighlights(pane, blockStates){
         const st = blockStates.get(w.block);
         if (!st) return;
         const L = lines.get(w.line);
-        if (!L) lines.set(w.line, { page:w.page, st, hunk:w.hunk, x0:w.x, x1:w.x+w.w, y0:w.y, y1:w.y+w.h });
-        else { L.x0 = Math.min(L.x0, w.x); L.x1 = Math.max(L.x1, w.x+w.w); L.y0 = Math.min(L.y0, w.y); L.y1 = Math.max(L.y1, w.y+w.h); if (L.hunk < 0) L.hunk = w.hunk; }
+        if (!L) lines.set(w.line, { page:w.page, st, x0:w.x, x1:w.x+w.w, y0:w.y, y1:w.y+w.h });
+        else { L.x0 = Math.min(L.x0, w.x); L.x1 = Math.max(L.x1, w.x+w.w); L.y0 = Math.min(L.y0, w.y); L.y1 = Math.max(L.y1, w.y+w.h); }
       });
-      lines.forEach(L => addHunkEl(pane, L.hunk, pdfRect(pane, L.page, L.x0, L.y0, L.x1 - L.x0, L.y1 - L.y0, L.st)));
+      lines.forEach(L => pdfRect(side, L.page, L.x0, L.y0, L.x1 - L.x0, L.y1 - L.y0, L.st));
     }
-  } else {
-    if (gran === 'word'){
-      words.forEach(w => {
-        if (!w.state) return;
-        w.els.forEach(e => { e.classList.add(w.state); addHunkEl(pane, w.hunk, e); });
-      });
-      // fill the space between two marked words of the same edit so it reads as one phrase
-      words.forEach((w, i) => {
-        const n = words[i+1];
-        if (w.state && n && n.hunk === w.hunk && n.blockEl === w.blockEl){
-          const last = w.els[w.els.length-1];
-          const gap = last.nextSibling;
-          if (gap && gap.nodeType === 3 && /^\s+$/.test(gap.nodeValue)){
-            const s = document.createElement('span');
-            s.className = 'cw ' + w.state;
-            gap.parentNode.replaceChild(s, gap);
-            s.appendChild(gap);
-            w.els.push(s);
-          }
+  } else if (gran === 'word'){
+    words.forEach(w => { if (w.state) w.els.forEach(e => e.classList.add(w.state)); });
+    // fill the space between marked words of the same edit so it reads as one phrase
+    words.forEach((w, i) => {
+      const n = words[i+1];
+      if (w.state && n && n.hunk === w.hunk && n.blockEl === w.blockEl){
+        const gap = w.els[w.els.length-1].nextSibling;
+        if (gap && gap.nodeType === 3 && /^\s+$/.test(gap.nodeValue)){
+          const s = document.createElement('span');
+          s.className = 'cw ' + w.state;
+          gap.parentNode.replaceChild(s, gap);
+          s.appendChild(gap);
+          w.els.push(s);
         }
-      });
-    } else {
-      const done = new Set();
-      words.forEach(w => {
-        const st = blockStates.get(w.block);
-        if (!st || done.has(w.blockEl)) return;
-        done.add(w.blockEl);
-        w.blockEl.classList.add('pb-' + st);
-        addHunkEl(pane, w.hunk, w.blockEl);
-      });
-    }
+      }
+    });
+  } else {
+    const done = new Set();
+    words.forEach(w => {
+      const st = blockStates.get(w.block);
+      if (!st || done.has(w.blockEl)) return;
+      done.add(w.blockEl);
+      w.blockEl.classList.add('pb-' + st);
+    });
   }
-  pane.tops = null;
 }
 
-/* ---------------- positions, scroll sync, navigation ---------------- */
+/* ---------------- change map ---------------- */
 
-function wordTop(pane, i){
-  const words = pane.doc.words;
-  if (!words.length) return 0;
-  i = Math.max(0, Math.min(i, words.length - 1));
-  if (pane.doc.kind === 'pdf'){
-    const w = words[i];
-    const el = pane.pageEls[w.page];
-    return el.offsetTop + w.y * el.offsetHeight;
-  }
-  if (!pane.tops){
-    const base = pane.scroller.getBoundingClientRect().top - pane.scroller.scrollTop;
-    pane.tops = words.map(w => w.els[0].getBoundingClientRect().top - base);
-  }
-  return pane.tops[i];
-}
-
-function firstWordAt(pane, y){
-  let lo = 0, hi = pane.doc.words.length - 1;
-  while (lo < hi){
-    const mid = (lo + hi) >> 1;
-    if (wordTop(pane, mid) < y) lo = mid + 1; else hi = mid;
-  }
-  return lo;
-}
-
-const ignoreUntil = { a:0, b:0 };
-let rafPending = false;
-
-function onScroll(key){
-  if (performance.now() < ignoreUntil[key]) return;
-  if (!$('syncChk').checked || rafPending) return;
-  rafPending = true;
-  requestAnimationFrame(() => {
-    rafPending = false;
-    const src = panes[key], other = panes[key === 'a' ? 'b' : 'a'];
-    if (!src || !other || !src.doc.words.length || !other.doc.words.length) return;
-    const map = eqMap[key];
-    const probe = src.scroller.scrollTop + 60;
-    let i = firstWordAt(src, probe);
-    let j = -1;
-    for (let k = i; k < Math.min(map.length, i + 600); k++){ if (map[k] >= 0){ i = k; j = map[k]; break; } }
-    if (j < 0){ for (let k = i; k >= Math.max(0, i - 600); k--){ if (map[k] >= 0){ i = k; j = map[k]; break; } } }
-    if (j < 0) return;
-    const offset = wordTop(src, i) - src.scroller.scrollTop;
-    const target = Math.max(0, wordTop(other, j) - offset);
-    if (Math.abs(other.scroller.scrollTop - target) > 1){
-      ignoreUntil[other.key] = performance.now() + 120;
-      other.scroller.scrollTop = target;
-    }
+function buildMinimap(){
+  const map = $('minimap');
+  map.innerHTML = '';
+  if (!track) return;
+  const h = map.clientHeight;
+  const geo = side => side.doc.kind === 'pdf' ? side.pageEls.map(el => ({ top: el.offsetTop, h: el.offsetHeight })) : null;
+  const g = { a: geo(sides.a), b: geo(sides.b) };
+  hunks.forEach(hk => {
+    const key = hk.a.length ? 'a' : 'b', side = sides[key];
+    const w = side.doc.words[hk[key][0]];
+    const t = side.doc.kind === 'pdf'
+      ? g[key][w.page].top + w.y * g[key][w.page].h
+      : w.els[0].getBoundingClientRect().top - side.cell.getBoundingClientRect().top;
+    const v = sideToTrack(t, key === 'a' ? track.TA : track.TB);
+    const tick = document.createElement('div');
+    tick.className = 'tick ' + hk.type;
+    tick.style.top = Math.min(h - 3, (v / track.len) * h) + 'px';
+    map.appendChild(tick);
   });
+  const view = document.createElement('div');
+  view.className = 'view';
+  map.appendChild(view);
+  updateMinimapView();
 }
 
-function goToHunk(n){
-  if (!hunks.length) return;
-  n = (n + hunks.length) % hunks.length;
-  ['a','b'].forEach(k => {
-    const p = panes[k];
-    (p.hunkEls.get(curHunk) || []).forEach(e => e.classList.remove('cur'));
-  });
-  curHunk = n;
-  const hk = hunks[n];
-  ['a','b'].forEach(k => {
-    const p = panes[k];
-    (p.hunkEls.get(n) || []).forEach(e => e.classList.add('cur'));
-    const idx = hk[k].length ? hk[k][0] : (k === 'a' ? hk.ia : hk.ib);
-    ignoreUntil[k] = performance.now() + 700;
-    p.scroller.scrollTo({ top: Math.max(0, wordTop(p, idx) - 140), behavior: 'smooth' });
-  });
-  $('navPos').textContent = `${n+1} of ${hunks.length}`;
+function updateMinimapView(){
+  const map = $('minimap'), v = map.querySelector('.view');
+  if (!v || !track) return;
+  const h = map.clientHeight, sc = $('scroller');
+  const span = Math.max(10, (sc.clientHeight / track.len) * h);
+  const at = (readingPoint() / track.len) * h;
+  v.style.height = span + 'px';
+  v.style.top = Math.min(h - span, Math.max(0, at - span * (sc.scrollTop / Math.max(1, sc.scrollHeight - sc.clientHeight)))) + 'px';
 }
 
 /* ---------------- compare flow ---------------- */
+
+function relayout(){
+  buildTrack();
+  buildMinimap();
+}
 
 function runCompare(){
   setStatus('');
   $('results').style.display = 'block';
   $('fnA').textContent = state.a.name;
   $('fnB').textContent = state.b.name;
-  mountPane('a');
-  mountPane('b');
   computeDiff(state.a, state.b);
+  buildView();
   refreshHighlights();
-  curHunk = -1;
-  $('navPos').textContent = hunks.length ? `${hunks.length} change${hunks.length === 1 ? '' : 's'}` : 'No changes';
-  $('prevBtn').disabled = $('nextBtn').disabled = !hunks.length;
   renderStats();
-  $('results').scrollIntoView({ behavior:'smooth', block:'start' });
+  $('results').scrollIntoView({ block:'start' });
+  requestAnimationFrame(relayout);
 }
 
 function refreshHighlights(){
   const bs = computeBlockStates(state.a, state.b);
-  applyHighlights(panes.a, bs.a);
-  applyHighlights(panes.b, bs.b);
-  if (curHunk >= 0) ['a','b'].forEach(k => (panes[k].hunkEls.get(curHunk) || []).forEach(e => e.classList.add('cur')));
+  applyHighlights(sides.a, bs.a);
+  applyHighlights(sides.b, bs.b);
 }
 
 function computeStats(){
@@ -832,11 +903,10 @@ function computeStats(){
 
 function renderStats(){
   const s = computeStats();
-  $('statsBar').innerHTML = `
-    <span><b>${s.edits}</b> edit${s.edits === 1 ? '' : 's'}</span>
-    <span class="add"><b>+${s.added.toLocaleString()}</b> words in revised</span>
-    <span class="del"><b>&minus;${s.removed.toLocaleString()}</b> words from original</span>
-    <span><b>${s.pct}%</b> of Draft A touched</span>`;
+  $('stats').innerHTML = `
+    <span><b>${s.edits.toLocaleString()}</b> edit${s.edits === 1 ? '' : 's'}</span>
+    <span class="add"><b>+${s.added.toLocaleString()}</b> words in</span>
+    <span class="del"><b>&minus;${s.removed.toLocaleString()}</b> words out</span>`;
 }
 
 setupSlot('a');
@@ -850,27 +920,41 @@ $('granToggle').addEventListener('click', e => {
   gran = btn.dataset.val;
   refreshHighlights();
 });
-$('prevBtn').addEventListener('click', () => goToHunk(curHunk < 0 ? hunks.length - 1 : curHunk - 1));
-$('nextBtn').addEventListener('click', () => goToHunk(curHunk + 1));
-$('scrollA').addEventListener('scroll', () => onScroll('a'), { passive:true });
-$('scrollB').addEventListener('scroll', () => onScroll('b'), { passive:true });
-
-const ro = new ResizeObserver(() => {
-  ['a','b'].forEach(k => { const p = panes[k]; if (!p) return; if (p.doc.kind === 'dom') fitDom(p); p.tops = null; });
+let syncQueued = false;
+$('scroller').addEventListener('scroll', () => {
+  if (syncQueued) return;
+  syncQueued = true;
+  requestAnimationFrame(() => { syncQueued = false; syncColumns(); });
+}, { passive:true });
+$('minimap').addEventListener('click', e => {
+  const map = $('minimap'), scroller = $('scroller');
+  const f = Math.min(1, Math.max(0, (e.clientY - map.getBoundingClientRect().top) / map.clientHeight));
+  scroller.scrollTo({ top: f * (scroller.scrollHeight - scroller.clientHeight), behavior:'smooth' });
 });
-ro.observe($('scrollA'));
-if (document.fonts) document.fonts.ready.then(() => ['a','b'].forEach(k => { if (panes[k]) panes[k].tops = null; }));
+
+let lastWidth = 0;
+new ResizeObserver(entries => {
+  const w = entries[0].contentRect.width;
+  if (!sides.a || Math.abs(w - lastWidth) < 2) { lastWidth = w; return; }
+  lastWidth = w;
+  clearTimeout(layoutTimer);
+  layoutTimer = setTimeout(() => {
+    [sides.a, sides.b].forEach(s => s.pageEls.forEach(el => { if (el && el._canvas){ releasePage(el); drawPage(el); } }));
+    relayout();
+  }, 150);
+}).observe($('scroller'));
+if (document.fonts) document.fonts.ready.then(() => { if (sides.a && $('results').style.display === 'block') relayout(); });
 
 $('printBtn').addEventListener('click', async () => {
   const jobs = [];
-  ['a','b'].forEach(k => { const p = panes[k]; if (p && p.doc.kind === 'pdf') p.pageEls.forEach((_, i) => jobs.push(renderPdfPage(p, i))); });
+  [sides.a, sides.b].forEach(s => s && s.pageEls.forEach(el => el && jobs.push(drawPage(el))));
   await Promise.all(jobs);
   window.print();
 });
 
 $('copyBtn').addEventListener('click', () => {
   const s = computeStats();
-  const text = `Ch-Changes comparison\nDraft A: ${state.a.name} (${state.a.words.length} words)\nDraft B: ${state.b.name} (${state.b.words.length} words)\n${s.edits} edits | +${s.added} words in revised | -${s.removed} words from original | ${s.pct}% touched`;
+  const text = `Ch-Changes comparison\nDraft A: ${state.a.name} (${state.a.words.length} words)\nDraft B: ${state.b.name} (${state.b.words.length} words)\n${s.edits} edits | +${s.added} words in | -${s.removed} words out`;
   navigator.clipboard.writeText(text).then(() => {
     const b = $('copyBtn'), o = b.textContent;
     b.textContent = 'Copied'; setTimeout(() => b.textContent = o, 1500);
